@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1f5e4a">
   <meta name="description" content="Portfolio Wandeltrainer 3 van Tineke Posthuma.">
   <title>Portfolio Tineke Posthuma · Wandeltrainer 3</title>
-  <link rel="stylesheet" href="styles.css?v=20260913-2055">
+  <link rel="stylesheet" href="styles.css?v=20260913-2110">
 </head>
 <body>
 <div class="app">
@@ -19,6 +19,10 @@
 
     <nav class="nav" aria-label="Hoofdnavigatie">
       <a class="active" href="#start"><span class="n">⌂</span><span>Start</span></a>
+      <a href="#over"><span class="n">i</span><span>Over dit portfolio</span></a>
+      <a href="#inhoud"><span class="n">≡</span><span>Inhoudsopgave</span></a>
+      <a href="#route"><span class="n">↗</span><span>Portfolio-onderdelen</span></a>
+      <div class="nav-divider"></div>
       <a href="#hoofdstuk-1"><span class="n">01</span><span>Profiel &amp; leerdoelen</span></a>
       <a href="#hoofdstuk-2"><span class="n">02</span><span>Doelgroep &amp; doelen</span></a>
       <a href="#hoofdstuk-3"><span class="n">03</span><span>Planning &amp; voorbereiding</span></a>
@@ -41,7 +45,7 @@
         <button class="toplink secondary" id="exportBtn" type="button">Back-up</button>
         <button class="toplink" id="saveBtn" type="button">Opslaan</button>
       </div>
-      <input class="screen-reader" id="importFile" type="file" accept="application/json" style="display:none" hidden>
+      <input class="screen-reader" id="importFile" type="file" accept="application/json" hidden>
     </header>
 
     <main>
@@ -52,7 +56,7 @@
         <div class="hero-copy">
           <div class="eyebrow">Portfolio · Wandeltrainer 3</div>
           <h2>Tineke <span>Posthuma</span></h2>
-          <p class="lead">Een persoonlijk portfolio over mijn ontwikkeling als wandeltrainer. Het portfolio is overzichtelijk opgebouwd in zes hoofdstukken en groeit mee met de opleiding.</p>
+          <p class="lead">Een persoonlijk portfolio over mijn ontwikkeling als wandeltrainer. De website groeit mee met de opleiding en wordt aangevuld met praktijkervaringen, trainingen, feedback, reflecties en bewijsstukken.</p>
           <div class="hero-meta">
             <span class="pill">Wandeltrainer 3</span>
             <span class="pill">Praktijkportfolio</span>
@@ -61,71 +65,120 @@
         </div>
         <figure class="hero-photo-card">
           <div class="photo-frame">
-            <img src="assets/images/tineke-met-zoon.jpg?v=20260913-2055" alt="Tineke tijdens een vrolijk dagje uit">
+            <img src="assets/images/tineke-met-zoon.jpg?v=20260913-2110" alt="Tineke tijdens een vrolijk dagje uit">
           </div>
           <figcaption>Met plezier onderweg.</figcaption>
         </figure>
       </section>
 
-      <section class="intro-panel" aria-labelledby="intro-title">
-        <div>
-          <span class="intro-label">Over dit portfolio</span>
-          <h3 id="intro-title">Zes hoofdstukken, één duidelijke lijn</h3>
+      <section class="section" id="over">
+        <div class="section-header">
+          <div class="section-icon">i</div>
+          <div>
+            <h3>Over dit portfolio</h3>
+            <p class="subtitle">Een portfolio dat meegroeit met de opleiding en de praktijk.</p>
+          </div>
         </div>
-        <p>De oorspronkelijke onderdelen uit het Wandeltrainer 3-portfolio zijn inhoudelijk behouden, maar samengevoegd tot zes logische hoofdstukken. Daardoor blijft de site rustig en overzichtelijk, terwijl alle onderwerpen een duidelijke plek houden.</p>
+        <div class="intro-grid">
+          <article class="card">
+            <h4>Een portfolio dat meegroeit</h4>
+            <p>Deze website is opgezet als digitaal portfolio voor Wandeltrainer 3. Hier komen de persoonlijke teksten, praktijkvoorbeelden, trainingsplannen, reflecties en bewijsstukken van Tineke samen in één overzichtelijk geheel.</p>
+          </article>
+          <article class="card quote-card">
+            <strong>“Leren door te doen, te kijken, te evalueren en opnieuw te proberen.”</strong>
+            <span>Voorlopige introductie · later te vervangen door Tinekes eigen woorden</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="inhoud">
+        <div class="section-header">
+          <div class="section-icon">≡</div>
+          <div>
+            <h3>Inhoudsopgave</h3>
+            <p class="subtitle">De oorspronkelijke onderdelen zijn samengevoegd tot zes duidelijke hoofdstukken.</p>
+          </div>
+        </div>
+        <p class="toc-note">Alle onderwerpen uit het oorspronkelijke Wandeltrainer 3-portfolio blijven behouden. Ze zijn alleen logisch gegroepeerd zodat de website rustiger en overzichtelijker blijft.</p>
+        <div class="toc-grid">
+          <a href="#hoofdstuk-1"><strong>01</strong><span><b>Profiel &amp; leerdoelen</b><small>Profiel als wandeltrainer · persoonlijke leerdoelen</small></span></a>
+          <a href="#hoofdstuk-2"><strong>02</strong><span><b>Doelgroep &amp; doelen</b><small>Beginsituatie en doelgroep · trainingsdoelen</small></span></a>
+          <a href="#hoofdstuk-3"><strong>03</strong><span><b>Planning &amp; voorbereiding</b><small>Periodeplanning · trainingsvoorbereiding</small></span></a>
+          <a href="#hoofdstuk-4"><strong>04</strong><span><b>Uitvoering &amp; bewijs</b><small>Uitvoering · veiligheid · communicatie en begeleiding</small></span></a>
+          <a href="#hoofdstuk-5"><strong>05</strong><span><b>Evaluatie &amp; feedback</b><small>Evaluatie · praktijkfeedback · assisterend kader</small></span></a>
+          <a href="#hoofdstuk-6"><strong>06</strong><span><b>Ontwikkeling &amp; reflectie</b><small>Ontwikkeling · eindreflectie · bewijsstukken · bijlagen</small></span></a>
+        </div>
+      </section>
+
+      <section class="section" id="route">
+        <div class="section-header">
+          <div class="section-icon">↗</div>
+          <div>
+            <h3>Portfolio-onderdelen</h3>
+            <p class="subtitle">De route door het portfolio in zes overzichtelijke hoofdstukken.</p>
+          </div>
+        </div>
+        <div class="journey">
+          <article class="journey-card"><div class="num">01</div><h4>Profiel &amp; leerdoelen</h4><p>Wie ben ik als wandeltrainer, waar sta ik nu en wat wil ik tijdens de opleiding ontwikkelen?</p><div class="mini-tags"><span>Profiel</span><span>Leerdoelen</span></div><a href="#hoofdstuk-1">Bekijk hoofdstuk</a></article>
+          <article class="journey-card"><div class="num">02</div><h4>Doelgroep &amp; doelen</h4><p>Wie zijn mijn deelnemers, wat is hun beginsituatie en welke doelen passen bij de groep?</p><div class="mini-tags"><span>Doelgroep</span><span>Trainingsdoelen</span></div><a href="#hoofdstuk-2">Bekijk hoofdstuk</a></article>
+          <article class="journey-card"><div class="num">03</div><h4>Planning &amp; voorbereiding</h4><p>Hoe bouw ik de trainingsperiode op en hoe vertaal ik die naar concrete trainingen?</p><div class="mini-tags"><span>Periodeplanning</span><span>Voorbereiding</span></div><a href="#hoofdstuk-3">Bekijk hoofdstuk</a></article>
+          <article class="journey-card"><div class="num">04</div><h4>Uitvoering &amp; bewijs</h4><p>Hoe voer ik trainingen uit, bewaak ik veiligheid en laat ik mijn handelen in de praktijk zien?</p><div class="mini-tags"><span>Uitvoering</span><span>Veiligheid</span><span>Begeleiding</span></div><a href="#hoofdstuk-4">Bekijk hoofdstuk</a></article>
+          <article class="journey-card"><div class="num">05</div><h4>Evaluatie &amp; feedback</h4><p>Wat werkte, wat kan beter en hoe verwerk ik feedback in mijn volgende stappen?</p><div class="mini-tags"><span>Evaluatie</span><span>Feedback</span><span>Samenwerking</span></div><a href="#hoofdstuk-5">Bekijk hoofdstuk</a></article>
+          <article class="journey-card"><div class="num">06</div><h4>Ontwikkeling &amp; reflectie</h4><p>Wat heb ik geleerd, hoe is mijn trainersrol veranderd en wat neem ik mee naar de toekomst?</p><div class="mini-tags"><span>Ontwikkeling</span><span>Reflectie</span><span>Bewijsstukken</span></div><a href="#hoofdstuk-6">Bekijk hoofdstuk</a></article>
+        </div>
       </section>
 
       <section class="portfolio-group section" id="hoofdstuk-1" data-group="1">
         <div class="section-header"><div class="section-num">01</div><div><h3>Profiel &amp; leerdoelen</h3><p class="subtitle">Wie ben ik als trainer en wat wil ik ontwikkelen?</p></div></div>
         <div class="subtopics"><span>Mijn profiel als wandeltrainer</span><span>Persoonlijke leerdoelen</span></div>
         <div class="group-preview" id="preview-1"></div>
-        <a class="edit-link" href="#invullen" data-open-group="1">Dit hoofdstuk invullen</a>
+        <a class="edit-link" href="#invullen" data-open-group="1">Dit hoofdstuk invullen of aanpassen</a>
       </section>
 
       <section class="portfolio-group section" id="hoofdstuk-2" data-group="2">
         <div class="section-header"><div class="section-num">02</div><div><h3>Doelgroep &amp; doelen</h3><p class="subtitle">Voor wie geef ik training en waar werken we naartoe?</p></div></div>
         <div class="subtopics"><span>Beginsituatie en doelgroep</span><span>Trainingsdoelen</span></div>
         <div class="group-preview" id="preview-2"></div>
-        <a class="edit-link" href="#invullen" data-open-group="2">Dit hoofdstuk invullen</a>
+        <a class="edit-link" href="#invullen" data-open-group="2">Dit hoofdstuk invullen of aanpassen</a>
       </section>
 
       <section class="portfolio-group section" id="hoofdstuk-3" data-group="3">
         <div class="section-header"><div class="section-num">03</div><div><h3>Planning &amp; voorbereiding</h3><p class="subtitle">Van periode-opbouw naar concrete trainingsvoorbereiding.</p></div></div>
         <div class="subtopics"><span>Periodeplanning</span><span>Trainingsvoorbereiding</span></div>
         <div class="group-preview" id="preview-3"></div>
-        <a class="edit-link" href="#invullen" data-open-group="3">Dit hoofdstuk invullen</a>
+        <a class="edit-link" href="#invullen" data-open-group="3">Dit hoofdstuk invullen of aanpassen</a>
       </section>
 
       <section class="portfolio-group section" id="hoofdstuk-4" data-group="4">
         <div class="section-header"><div class="section-num">04</div><div><h3>Uitvoering &amp; bewijs</h3><p class="subtitle">Wat heb ik gedaan en waarmee laat ik dat zien?</p></div></div>
         <div class="subtopics"><span>Uitvoering en bewijs</span><span>Veiligheid en risicoanalyse</span><span>Communicatie en begeleiding</span></div>
         <div class="group-preview" id="preview-4"></div>
-        <a class="edit-link" href="#invullen" data-open-group="4">Dit hoofdstuk invullen</a>
+        <a class="edit-link" href="#invullen" data-open-group="4">Dit hoofdstuk invullen of aanpassen</a>
       </section>
 
       <section class="portfolio-group section" id="hoofdstuk-5" data-group="5">
         <div class="section-header"><div class="section-num">05</div><div><h3>Evaluatie &amp; feedback</h3><p class="subtitle">Terugkijken, feedback verwerken en bijstellen.</p></div></div>
         <div class="subtopics"><span>Evaluatie en bijstelling</span><span>Feedback praktijkbegeleider</span><span>Aansturen assisterend kader</span></div>
         <div class="group-preview" id="preview-5"></div>
-        <a class="edit-link" href="#invullen" data-open-group="5">Dit hoofdstuk invullen</a>
+        <a class="edit-link" href="#invullen" data-open-group="5">Dit hoofdstuk invullen of aanpassen</a>
       </section>
 
       <section class="portfolio-group section" id="hoofdstuk-6" data-group="6">
         <div class="section-header"><div class="section-num">06</div><div><h3>Ontwikkeling &amp; reflectie</h3><p class="subtitle">Wat heb ik geleerd en wat neem ik mee?</p></div></div>
         <div class="subtopics"><span>Mijn ontwikkeling als trainer</span><span>Eindreflectie</span><span>Bewijsstukkenregister</span><span>Bijlagen</span></div>
         <div class="group-preview" id="preview-6"></div>
-        <a class="edit-link" href="#invullen" data-open-group="6">Dit hoofdstuk invullen</a>
+        <a class="edit-link" href="#invullen" data-open-group="6">Dit hoofdstuk invullen of aanpassen</a>
       </section>
 
       <section class="section editor-section" id="invullen">
-        <div class="section-header"><div class="section-num">✎</div><div><h3>Portfolio invullen</h3><p class="subtitle">Dezelfde zes hoofdstukken als in de rest van de site.</p></div></div>
+        <div class="section-header"><div class="section-icon">✎</div><div><h3>Portfolio invullen</h3><p class="subtitle">Vul de zes hoofdstukken rustig aan. De tekst wordt automatisch in deze browser opgeslagen.</p></div></div>
         <div class="editor-notice">
-          <div><strong>Conceptopslag</strong><span>Je tekst wordt automatisch in deze browser bewaard. Maak een back-up als je op een ander apparaat verder wilt werken.</span></div>
+          <div><strong>Conceptopslag</strong><span>Je tekst blijft op dit apparaat en in deze browser bewaard. Gebruik <b>Back-up</b> om een bestand te bewaren of op een andere computer verder te gaan.</span></div>
           <button class="text-button" id="importBtn" type="button">Back-up terugzetten</button>
         </div>
         <div class="editor-list" id="editorList"></div>
         <div class="editor-footer">
-          <div><strong id="progressText">0 van 6 hoofdstukken gestart</strong><span>De ingevulde tekst verschijnt meteen in het bijbehorende hoofdstuk hierboven.</span></div>
+          <div><strong id="progressText">0 van 6 hoofdstukken gestart</strong><span>De ingevulde tekst verschijnt direct in het bijbehorende hoofdstuk hierboven.</span></div>
           <button class="save-large" id="saveBottomBtn" type="button">Nu opslaan</button>
         </div>
       </section>
@@ -134,6 +187,6 @@
     </main>
   </div>
 </div>
-<script src="script.js?v=20260913-2055"></script>
+<script src="script.js?v=20260913-2110"></script>
 </body>
 </html>
