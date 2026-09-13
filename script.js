@@ -54,7 +54,7 @@ const groups = [
   ]}
 ];
 
-const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 let state = {version:2, updatedAt:null, values:{}};
 let activeGroupIndex = null;
