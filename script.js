@@ -57,23 +57,15 @@ const groups = [
 const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 let state = {version:2, updatedAt:null, values:{}};
-let activeGroupIndex = null;
-let activeTopicIndex = null;
-let modalDirty = false;
-let dragState = null;
-let restorePosition = null;
+const openWindows = new Map();
+let topZ = 1100;
+let activeWindowKey = null;
+let scrollWasLocked = false;
 
 const saveStatus = document.getElementById('saveStatus');
 const statusWrap = saveStatus?.closest('.status');
 const windowLayer = document.getElementById('windowLayer');
-const editorWindow = document.getElementById('editorWindow');
-const windowDragHandle = document.getElementById('windowDragHandle');
-const windowTitle = document.getElementById('windowTitle');
-const windowKicker = document.getElementById('windowKicker');
-const windowHelp = document.getElementById('windowHelp');
-const modalFields = document.getElementById('modalFields');
-const windowSaveHint = document.getElementById('windowSaveHint');
-const minimizeBtn = document.getElementById('minimizeBtn');
+windowLayer?.querySelector('#editorWindow')?.remove();
 
 menuBtn?.addEventListener('click',()=>{
   const open=body.classList.toggle('menu-open');
@@ -143,13 +135,15 @@ function renderChapters(){
         ? values.filter(item=>item.value).map(item=>`<div class="saved-field"><strong>${esc(item.label)}</strong><p>${esc(item.value)}</p></div>`).join('')
         : '<p class="topic-empty">Nog niet ingevuld. Voeg hier de tekst voor dit onderdeel toe.</p>';
       const number=`${group.n}.${topicIndex+1}`;
-      return `<article class="topic-card ${filled?'filled':''}" data-topic-card="${groupIndex}-${topicIndex}">
+      const key=`${groupIndex}-${topicIndex}`;
+      const alreadyOpen=openWindows.has(key);
+      return `<article class="topic-card ${filled?'filled':''}" data-topic-card="${key}">
         <div class="topic-card-head">
           <div class="topic-card-title"><span class="topic-index">Onderdeel ${number}</span><h4>${esc(topic.title)}</h4></div>
           <span class="topic-state">${filled?'Ingevuld':'Nog leeg'}</span>
         </div>
         <div class="topic-content">${content}</div>
-        <button class="topic-edit-btn" type="button" data-edit-topic="${groupIndex}-${topicIndex}">${filled?'Aanpassen':'Invullen'}</button>
+        <button class="topic-edit-btn" type="button" data-edit-topic="${key}">${alreadyOpen?'Venster openen':(filled?'Aanpassen':'Invullen')}</button>
       </article>`;
     }).join('');
 
@@ -165,178 +159,292 @@ function renderChapters(){
   });
 }
 
-function centerWindow(){
-  if(!editorWindow) return;
-  editorWindow.style.right='auto';
-  editorWindow.style.bottom='auto';
-  editorWindow.style.left='16px';
-  editorWindow.style.top='90px';
+function makeWindowKey(groupIndex,topicIndex){
+  return `${groupIndex}-${topicIndex}`;
+}
+
+function lockPageScroll(locked){
+  if(locked===scrollWasLocked) return;
+  scrollWasLocked=locked;
+  document.documentElement.style.overflow=locked?'hidden':'';
+  body.style.overflow=locked?'hidden':'';
+  document.documentElement.style.overscrollBehavior=locked?'none':'';
+  body.style.overscrollBehavior=locked?'none':'';
+}
+
+function syncPageScrollLock(){
+  const hasExpanded=[...openWindows.values()].some(win=>!win.minimized);
+  lockPageScroll(hasExpanded);
+  if(windowLayer) windowLayer.hidden=openWindows.size===0;
+}
+
+function bringToFront(win,focus=true){
+  topZ+=1;
+  win.z=topZ;
+  win.el.style.zIndex=String(topZ);
+  activeWindowKey=win.key;
+  openWindows.forEach(other=>other.el.classList.toggle('is-active',other.key===win.key));
+  if(focus && !win.minimized){
+    requestAnimationFrame(()=>win.el.querySelector('textarea')?.focus({preventScroll:true}));
+  }
+}
+
+function centerFloatingWindow(win,cascade=true){
+  const el=win.el;
+  el.style.right='auto';
+  el.style.bottom='auto';
+  el.style.left='12px';
+  el.style.top='72px';
   requestAnimationFrame(()=>{
-    const rect=editorWindow.getBoundingClientRect();
-    const left=Math.max(12,(window.innerWidth-rect.width)/2);
-    const top=Math.max(72,(window.innerHeight-rect.height)/2);
-    editorWindow.style.left=`${left}px`;
-    editorWindow.style.top=`${top}px`;
+    const rect=el.getBoundingClientRect();
+    const expandedCount=[...openWindows.values()].filter(item=>!item.minimized).length;
+    const offset=cascade?Math.min(70,Math.max(0,expandedCount-1)*22):0;
+    const left=Math.max(8,(window.innerWidth-rect.width)/2+offset);
+    const top=Math.max(58,(window.innerHeight-rect.height)/2+offset/2);
+    const next=clampWindowPosition(el,left,top);
+    el.style.left=`${next.left}px`;
+    el.style.top=`${next.top}px`;
   });
 }
 
-function markModalDirty(){
-  modalDirty=true;
-  if(windowSaveHint){
-    windowSaveHint.textContent='Wijzigingen zijn nog niet opgeslagen.';
-    windowSaveHint.classList.remove('saved');
-  }
-}
-
-function openEditor(groupIndex,topicIndex){
-  const group=groups[groupIndex];
-  const topic=group?.topics[topicIndex];
-  if(!group||!topic) return;
-
-  activeGroupIndex=groupIndex;
-  activeTopicIndex=topicIndex;
-  modalDirty=false;
-  restorePosition=null;
-
-  windowKicker.textContent=`Hoofdstuk ${group.n} · onderdeel ${topicIndex+1}`;
-  windowTitle.textContent=topic.title;
-  windowHelp.textContent=`Werk alleen dit onderdeel uit. Klik op Opslaan om de tekst direct onder “${topic.title}” in het portfolio te tonen.`;
-  modalFields.innerHTML=topic.fields.map(([id,label,help])=>`<div class="modal-field"><label for="modal-${esc(id)}">${esc(label)}<small>${esc(help)}</small></label><textarea id="modal-${esc(id)}" data-modal-field="${esc(id)}"></textarea></div>`).join('');
-
-  modalFields.querySelectorAll('[data-modal-field]').forEach(field=>{
-    field.value=state.values[field.dataset.modalField]||'';
-    field.addEventListener('input',markModalDirty);
-  });
-
-  windowSaveHint.textContent=isTopicFilled(topic)?'Bestaande tekst geladen.':'Dit onderdeel is nog leeg.';
-  windowSaveHint.classList.toggle('saved',isTopicFilled(topic));
-  editorWindow.classList.remove('minimized');
-  minimizeBtn.textContent='−';
-  minimizeBtn.setAttribute('aria-label','Minimaliseren');
-  minimizeBtn.title='Minimaliseren';
-  windowLayer.hidden=false;
-  centerWindow();
-  setTimeout(()=>modalFields.querySelector('textarea')?.focus(),80);
-}
-
-function hasUnsavedModalChanges(){
-  if(!modalDirty||activeGroupIndex===null||activeTopicIndex===null) return false;
-  const topic=groups[activeGroupIndex].topics[activeTopicIndex];
-  return topic.fields.some(([id])=>{
-    const field=modalFields.querySelector(`[data-modal-field="${id}"]`);
-    return (field?.value||'') !== (state.values[id]||'');
-  });
-}
-
-function closeEditor(force=false){
-  if(!force && hasUnsavedModalChanges()){
-    const ok=window.confirm('Je hebt wijzigingen die nog niet zijn opgeslagen. Toch sluiten?');
-    if(!ok) return;
-  }
-  windowLayer.hidden=true;
-  editorWindow.classList.remove('minimized');
-  activeGroupIndex=null;
-  activeTopicIndex=null;
-  modalDirty=false;
-  dragState=null;
-  restorePosition=null;
-}
-
-function saveActiveTopic(){
-  if(activeGroupIndex===null||activeTopicIndex===null) return;
-  const topic=groups[activeGroupIndex].topics[activeTopicIndex];
-  topic.fields.forEach(([id])=>{
-    const field=modalFields.querySelector(`[data-modal-field="${id}"]`);
-    state.values[id]=field?.value||'';
-  });
-  if(!persistState(`${topic.title} opgeslagen`)) return;
-  const savedGroupIndex=activeGroupIndex;
-  const savedTopicIndex=activeTopicIndex;
-  modalDirty=false;
-  renderChapters();
-  closeEditor(true);
-  document.querySelector(`[data-topic-card="${savedGroupIndex}-${savedTopicIndex}"]`)?.scrollIntoView({behavior:'smooth',block:'center'});
-}
-
-function toggleMinimize(){
-  if(windowLayer.hidden) return;
-  const minimized=editorWindow.classList.toggle('minimized');
-  if(minimized){
-    const rect=editorWindow.getBoundingClientRect();
-    restorePosition={left:rect.left,top:rect.top};
-    editorWindow.style.left='auto';
-    editorWindow.style.top='auto';
-    editorWindow.style.right='18px';
-    editorWindow.style.bottom='18px';
-    minimizeBtn.textContent='□';
-    minimizeBtn.setAttribute('aria-label','Herstellen');
-    minimizeBtn.title='Herstellen';
-  }else{
-    editorWindow.style.right='auto';
-    editorWindow.style.bottom='auto';
-    editorWindow.style.left=`${Math.max(8,restorePosition?.left??20)}px`;
-    editorWindow.style.top=`${Math.max(60,restorePosition?.top??90)}px`;
-    minimizeBtn.textContent='−';
-    minimizeBtn.setAttribute('aria-label','Minimaliseren');
-    minimizeBtn.title='Minimaliseren';
-  }
-}
-
-function clampWindowPosition(left,top){
-  const rect=editorWindow.getBoundingClientRect();
-  const maxLeft=Math.max(8,window.innerWidth-Math.min(rect.width,window.innerWidth-16)-8);
-  const maxTop=Math.max(58,window.innerHeight-Math.min(rect.height,window.innerHeight-16)-8);
+function clampWindowPosition(el,left,top){
+  const rect=el.getBoundingClientRect();
+  const width=Math.min(rect.width,window.innerWidth-16);
+  const height=Math.min(rect.height,window.innerHeight-16);
+  const maxLeft=Math.max(8,window.innerWidth-width-8);
+  const maxTop=Math.max(58,window.innerHeight-height-8);
   return {
     left:Math.min(Math.max(8,left),maxLeft),
     top:Math.min(Math.max(58,top),maxTop)
   };
 }
 
-windowDragHandle?.addEventListener('pointerdown',event=>{
-  if(event.target.closest('button')) return;
-  const rect=editorWindow.getBoundingClientRect();
-  dragState={pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top};
-  windowDragHandle.setPointerCapture(event.pointerId);
-  body.classList.add('window-dragging');
-  editorWindow.style.right='auto';
-  editorWindow.style.bottom='auto';
-});
-
-windowDragHandle?.addEventListener('pointermove',event=>{
-  if(!dragState||dragState.pointerId!==event.pointerId) return;
-  const next=clampWindowPosition(event.clientX-dragState.offsetX,event.clientY-dragState.offsetY);
-  editorWindow.style.left=`${next.left}px`;
-  editorWindow.style.top=`${next.top}px`;
-});
-
-function stopDragging(event){
-  if(!dragState) return;
-  if(event && dragState.pointerId!==event.pointerId) return;
-  try{windowDragHandle.releasePointerCapture(dragState.pointerId);}catch(_err){}
-  dragState=null;
-  body.classList.remove('window-dragging');
+function windowHasUnsavedChanges(win){
+  if(!win.dirty) return false;
+  return win.topic.fields.some(([id])=>{
+    const field=win.el.querySelector(`[data-modal-field="${id}"]`);
+    return (field?.value||'') !== (state.values[id]||'');
+  });
 }
-windowDragHandle?.addEventListener('pointerup',stopDragging);
-windowDragHandle?.addEventListener('pointercancel',stopDragging);
+
+function setWindowDirty(win,dirty=true){
+  win.dirty=dirty;
+  const hint=win.el.querySelector('[data-window-save-hint]');
+  if(!hint) return;
+  if(dirty){
+    hint.textContent='Wijzigingen zijn nog niet opgeslagen.';
+    hint.classList.remove('saved');
+  }else{
+    hint.textContent='Opgeslagen.';
+    hint.classList.add('saved');
+  }
+}
+
+function windowMarkup(group,topic,groupIndex,topicIndex,key){
+  const fields=topic.fields.map(([id,label,help])=>`<div class="modal-field"><label for="modal-${key}-${esc(id)}">${esc(label)}<small>${esc(help)}</small></label><textarea id="modal-${key}-${esc(id)}" data-modal-field="${esc(id)}"></textarea></div>`).join('');
+  return `<section class="editor-window" data-editor-window="${key}" role="dialog" aria-modal="false" aria-labelledby="window-title-${key}">
+    <header class="window-bar" data-window-drag-handle>
+      <div class="window-title-wrap">
+        <span class="window-kicker">Hoofdstuk ${group.n} · onderdeel ${topicIndex+1}</span>
+        <strong id="window-title-${key}">${esc(topic.title)}</strong>
+      </div>
+      <div class="window-controls">
+        <button class="window-control" data-window-minimize type="button" aria-label="Minimaliseren" title="Minimaliseren">−</button>
+        <button class="window-control close" data-window-close type="button" aria-label="Sluiten" title="Sluiten">×</button>
+      </div>
+    </header>
+    <div class="window-body">
+      <p class="window-help">Werk alleen dit onderdeel uit. Klik op Opslaan om de tekst direct bij “${esc(topic.title)}” in het portfolio te tonen.</p>
+      <div class="modal-fields">${fields}</div>
+    </div>
+    <footer class="window-footer">
+      <span class="window-save-hint ${isTopicFilled(topic)?'saved':''}" data-window-save-hint>${isTopicFilled(topic)?'Bestaande tekst geladen.':'Dit onderdeel is nog leeg.'}</span>
+      <div class="window-actions">
+        <button class="text-button" data-window-cancel type="button">Sluiten</button>
+        <button class="save-large" data-window-save type="button">Opslaan</button>
+      </div>
+    </footer>
+  </section>`;
+}
+
+function attachWindowEvents(win){
+  const el=win.el;
+  const handle=el.querySelector('[data-window-drag-handle]');
+  const minimize=el.querySelector('[data-window-minimize]');
+
+  el.addEventListener('pointerdown',()=>bringToFront(win,false));
+  el.querySelectorAll('[data-modal-field]').forEach(field=>{
+    field.value=state.values[field.dataset.modalField]||'';
+    field.addEventListener('input',()=>setWindowDirty(win,true));
+  });
+
+  el.querySelector('[data-window-close]')?.addEventListener('click',()=>closeWindow(win,false));
+  el.querySelector('[data-window-cancel]')?.addEventListener('click',()=>closeWindow(win,false));
+  el.querySelector('[data-window-save]')?.addEventListener('click',()=>saveWindow(win));
+  minimize?.addEventListener('click',()=>toggleMinimize(win));
+
+  handle?.addEventListener('pointerdown',event=>{
+    if(event.target.closest('button')||win.minimized) return;
+    bringToFront(win,false);
+    const rect=el.getBoundingClientRect();
+    win.dragState={pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top};
+    handle.setPointerCapture(event.pointerId);
+    body.classList.add('window-dragging');
+    el.style.right='auto';
+    el.style.bottom='auto';
+  });
+  handle?.addEventListener('pointermove',event=>{
+    if(!win.dragState||win.dragState.pointerId!==event.pointerId) return;
+    const next=clampWindowPosition(el,event.clientX-win.dragState.offsetX,event.clientY-win.dragState.offsetY);
+    el.style.left=`${next.left}px`;
+    el.style.top=`${next.top}px`;
+  });
+  const stopDrag=event=>{
+    if(!win.dragState) return;
+    if(event && win.dragState.pointerId!==event.pointerId) return;
+    try{handle.releasePointerCapture(win.dragState.pointerId);}catch(_err){}
+    win.dragState=null;
+    if(![...openWindows.values()].some(item=>item.dragState)) body.classList.remove('window-dragging');
+  };
+  handle?.addEventListener('pointerup',stopDrag);
+  handle?.addEventListener('pointercancel',stopDrag);
+}
+
+function openEditor(groupIndex,topicIndex){
+  const group=groups[groupIndex];
+  const topic=group?.topics[topicIndex];
+  if(!group||!topic||!windowLayer) return;
+  const key=makeWindowKey(groupIndex,topicIndex);
+
+  const existing=openWindows.get(key);
+  if(existing){
+    if(existing.minimized) restoreWindow(existing);
+    bringToFront(existing,true);
+    return;
+  }
+
+  const wrapper=document.createElement('div');
+  wrapper.innerHTML=windowMarkup(group,topic,groupIndex,topicIndex,key).trim();
+  const el=wrapper.firstElementChild;
+  windowLayer.appendChild(el);
+
+  const win={key,el,groupIndex,topicIndex,group,topic,dirty:false,minimized:false,restorePosition:null,dragState:null,z:0};
+  openWindows.set(key,win);
+  attachWindowEvents(win);
+  windowLayer.hidden=false;
+  bringToFront(win,false);
+  centerFloatingWindow(win,true);
+  syncPageScrollLock();
+  renderChapters();
+  setTimeout(()=>el.querySelector('textarea')?.focus({preventScroll:true}),90);
+}
+
+function closeWindow(win,force=false){
+  if(!win||!openWindows.has(win.key)) return;
+  if(!force&&windowHasUnsavedChanges(win)){
+    const ok=window.confirm(`Je hebt wijzigingen in “${win.topic.title}” die nog niet zijn opgeslagen. Toch sluiten?`);
+    if(!ok) return;
+  }
+  win.el.remove();
+  openWindows.delete(win.key);
+  if(activeWindowKey===win.key){
+    const remaining=[...openWindows.values()].sort((a,b)=>b.z-a.z);
+    activeWindowKey=remaining[0]?.key||null;
+    if(remaining[0]) bringToFront(remaining[0],false);
+  }
+  layoutMinimizedWindows();
+  syncPageScrollLock();
+  renderChapters();
+}
+
+function saveWindow(win){
+  if(!win||!openWindows.has(win.key)) return;
+  win.topic.fields.forEach(([id])=>{
+    const field=win.el.querySelector(`[data-modal-field="${id}"]`);
+    state.values[id]=field?.value||'';
+  });
+  if(!persistState(`${win.topic.title} opgeslagen`)) return;
+  setWindowDirty(win,false);
+  const cardSelector=`[data-topic-card="${win.groupIndex}-${win.topicIndex}"]`;
+  renderChapters();
+  closeWindow(win,true);
+  if(![...openWindows.values()].some(item=>!item.minimized)){
+    requestAnimationFrame(()=>document.querySelector(cardSelector)?.scrollIntoView({behavior:'smooth',block:'center'}));
+  }
+}
+
+function toggleMinimize(win){
+  if(!win||!openWindows.has(win.key)) return;
+  if(win.minimized) restoreWindow(win);
+  else minimizeWindow(win);
+}
+
+function minimizeWindow(win){
+  const rect=win.el.getBoundingClientRect();
+  win.restorePosition={left:rect.left,top:rect.top};
+  win.minimized=true;
+  win.el.classList.add('minimized');
+  const button=win.el.querySelector('[data-window-minimize]');
+  if(button){button.textContent='□';button.setAttribute('aria-label','Herstellen');button.title='Herstellen';}
+  layoutMinimizedWindows();
+  syncPageScrollLock();
+}
+
+function restoreWindow(win){
+  win.minimized=false;
+  win.el.classList.remove('minimized');
+  win.el.style.right='auto';
+  win.el.style.bottom='auto';
+  const button=win.el.querySelector('[data-window-minimize]');
+  if(button){button.textContent='−';button.setAttribute('aria-label','Minimaliseren');button.title='Minimaliseren';}
+  const next=clampWindowPosition(win.el,win.restorePosition?.left??20,win.restorePosition?.top??80);
+  win.el.style.left=`${next.left}px`;
+  win.el.style.top=`${next.top}px`;
+  bringToFront(win,true);
+  layoutMinimizedWindows();
+  syncPageScrollLock();
+}
+
+function layoutMinimizedWindows(){
+  const minimized=[...openWindows.values()].filter(win=>win.minimized).sort((a,b)=>a.z-b.z);
+  if(!minimized.length) return;
+  const itemWidth=Math.min(340,Math.max(240,window.innerWidth-24));
+  const gap=10;
+  const rowHeight=54;
+  const usableHeight=Math.max(rowHeight,window.innerHeight-90);
+  const rows=Math.max(1,Math.floor(usableHeight/rowHeight));
+  minimized.forEach((win,index)=>{
+    const row=index%rows;
+    const col=Math.floor(index/rows);
+    win.el.style.left='auto';
+    win.el.style.top='auto';
+    win.el.style.right=`${12+col*(itemWidth+gap)}px`;
+    win.el.style.bottom=`${12+row*rowHeight}px`;
+  });
+}
 
 window.addEventListener('resize',()=>{
-  if(windowLayer.hidden||editorWindow.classList.contains('minimized')) return;
-  const rect=editorWindow.getBoundingClientRect();
-  const next=clampWindowPosition(rect.left,rect.top);
-  editorWindow.style.left=`${next.left}px`;
-  editorWindow.style.top=`${next.top}px`;
+  openWindows.forEach(win=>{
+    if(win.minimized) return;
+    const rect=win.el.getBoundingClientRect();
+    const next=clampWindowPosition(win.el,rect.left,rect.top);
+    win.el.style.left=`${next.left}px`;
+    win.el.style.top=`${next.top}px`;
+  });
+  layoutMinimizedWindows();
 });
 
-document.getElementById('closeBtn')?.addEventListener('click',()=>closeEditor(false));
-document.getElementById('cancelBtn')?.addEventListener('click',()=>closeEditor(false));
-document.getElementById('topicSaveBtn')?.addEventListener('click',saveActiveTopic);
-minimizeBtn?.addEventListener('click',toggleMinimize);
-
 document.addEventListener('keydown',event=>{
-  if(event.key==='Escape'&&!windowLayer.hidden) closeEditor(false);
-  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'&&!windowLayer.hidden){
-    event.preventDefault();
-    saveActiveTopic();
+  if(event.key==='Escape'&&openWindows.size){
+    const target=[...openWindows.values()].sort((a,b)=>b.z-a.z)[0];
+    if(target) closeWindow(target,false);
+  }
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'&&openWindows.size){
+    const target=activeWindowKey?openWindows.get(activeWindowKey):[...openWindows.values()].sort((a,b)=>b.z-a.z)[0];
+    if(target&&!target.minimized){
+      event.preventDefault();
+      saveWindow(target);
+    }
   }
 });
 
@@ -362,7 +470,16 @@ document.getElementById('importFile')?.addEventListener('change',async event=>{
     const data=JSON.parse(await file.text());
     if(!data||typeof data.values!=='object') throw new Error('invalid');
     state={version:2,updatedAt:new Date().toISOString(),values:{...data.values}};
-    if(persistState('Back-up teruggezet')) renderChapters();
+    if(persistState('Back-up teruggezet')){
+      renderChapters();
+      openWindows.forEach(win=>{
+        if(windowHasUnsavedChanges(win)) return;
+        win.topic.fields.forEach(([id])=>{
+          const field=win.el.querySelector(`[data-modal-field="${id}"]`);
+          if(field) field.value=state.values[id]||'';
+        });
+      });
+    }
   }catch(err){
     setStatus('Back-up is niet geldig','error');
   }
@@ -381,3 +498,4 @@ observed.forEach(section=>observer.observe(section));
 
 loadState();
 renderChapters();
+syncPageScrollLock();
