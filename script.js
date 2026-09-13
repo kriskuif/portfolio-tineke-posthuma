@@ -54,67 +54,53 @@ const groups = [
   ]}
 ];
 
-const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+
+let state = {version:2, updatedAt:null, values:{}};
+let activeGroupIndex = null;
+let activeTopicIndex = null;
+let modalDirty = false;
+let dragState = null;
+let restorePosition = null;
+
+const saveStatus = document.getElementById('saveStatus');
+const statusWrap = saveStatus?.closest('.status');
+const windowLayer = document.getElementById('windowLayer');
+const editorWindow = document.getElementById('editorWindow');
+const windowDragHandle = document.getElementById('windowDragHandle');
+const windowTitle = document.getElementById('windowTitle');
+const windowKicker = document.getElementById('windowKicker');
+const windowHelp = document.getElementById('windowHelp');
+const modalFields = document.getElementById('modalFields');
+const windowSaveHint = document.getElementById('windowSaveHint');
+const minimizeBtn = document.getElementById('minimizeBtn');
 
 menuBtn?.addEventListener('click',()=>{
   const open=body.classList.toggle('menu-open');
   menuBtn.setAttribute('aria-expanded',String(open));
 });
 
-function buildEditor(){
-  const list=document.getElementById('editorList');
-  if(!list) return;
-  list.innerHTML=groups.map((group,index)=>{
-    const topics=group.topics.map(topic=>{
-      const fields=topic.fields.map(f=>`<label>${esc(f[1])}<small>${esc(f[2])}</small><textarea id="${esc(f[0])}" data-save></textarea></label>`).join('');
-      return `<div class="topic-block"><div class="topic-heading">${esc(topic.title)}</div><div class="field-grid">${fields}</div></div>`;
-    }).join('');
-    return `<details class="edit-card" data-group="${index+1}" ${index===0?'open':''}><summary><span class="edit-num">${group.n}</span><span><strong>${esc(group.title)}</strong><small>${esc(group.sub)}</small></span><span class="edit-state">Nog leeg</span></summary><div class="edit-body">${topics}</div></details>`;
-  }).join('');
-}
+document.querySelectorAll('.nav a').forEach(link=>link.addEventListener('click',()=>{
+  body.classList.remove('menu-open');
+  menuBtn?.setAttribute('aria-expanded','false');
+}));
 
-buildEditor();
-
-const fields=[...document.querySelectorAll('[data-save]')];
-const saveStatus=document.getElementById('saveStatus');
-const statusWrap=saveStatus?.closest('.status');
-let saveTimer;
-
-function getState(){
-  const values={};
-  fields.forEach(field=>values[field.id]=field.value);
-  return {version:1,updatedAt:new Date().toISOString(),values};
-}
-
-function setStatus(text,state=''){
+function setStatus(text,statusClass=''){
   if(saveStatus) saveStatus.textContent=text;
   if(statusWrap){
     statusWrap.classList.remove('saved','saving','error');
-    if(state) statusWrap.classList.add(state);
+    if(statusClass) statusWrap.classList.add(statusClass);
   }
 }
 
-function saveNow(showMessage=true){
-  try{
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(getState()));
-    setStatus(showMessage?'Opgeslagen in deze browser':'Concept opgeslagen','saved');
-  }catch(err){
-    setStatus('Opslaan mislukt','error');
-  }
-  updateUI();
-}
-
-function loadSaved(){
+function loadState(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
     if(!raw) return;
-    const data=JSON.parse(raw);
-    Object.entries(data.values||{}).forEach(([id,value])=>{
-      const field=document.getElementById(id);
-      if(field) field.value=value ?? '';
-    });
-    if(data.updatedAt){
-      const date=new Date(data.updatedAt);
+    const parsed=JSON.parse(raw);
+    state={version:2,updatedAt:parsed.updatedAt||null,values:{...(parsed.values||{})}};
+    if(state.updatedAt){
+      const date=new Date(state.updatedAt);
       if(!Number.isNaN(date.getTime())) setStatus(`Concept opgeslagen · ${date.toLocaleDateString('nl-NL')}`,'saved');
     }
   }catch(err){
@@ -122,99 +108,268 @@ function loadSaved(){
   }
 }
 
-function groupValues(group){
-  return group.topics.flatMap(topic=>topic.fields.map(f=>({id:f[0],label:f[1],topic:topic.title,value:(document.getElementById(f[0])?.value||'').trim()})));
+function persistState(message='Onderdeel opgeslagen'){
+  state.version=2;
+  state.updatedAt=new Date().toISOString();
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    setStatus(message,'saved');
+    return true;
+  }catch(err){
+    setStatus('Opslaan mislukt','error');
+    return false;
+  }
 }
 
-function updatePreviews(){
-  groups.forEach((group,index)=>{
-    const target=document.getElementById(`preview-${index+1}`);
+function topicValues(topic){
+  return topic.fields.map(([id,label])=>({id,label,value:String(state.values[id]||'').trim()}));
+}
+
+function isTopicFilled(topic){
+  return topicValues(topic).some(item=>item.value);
+}
+
+function renderChapters(){
+  groups.forEach((group,groupIndex)=>{
+    const target=document.getElementById(`topics-${groupIndex+1}`);
     if(!target) return;
-    const filled=groupValues(group).filter(item=>item.value);
-    if(!filled.length){
-      target.innerHTML='<div class="preview-empty">Nog niet ingevuld. Gebruik “Dit hoofdstuk invullen of aanpassen” om hier inhoud toe te voegen.</div>';
-      return;
-    }
-    target.innerHTML=filled.map(item=>`<article class="preview-item"><h4>${esc(item.label)}</h4><p>${esc(item.value)}</p></article>`).join('');
+    let filledCount=0;
+
+    target.innerHTML=group.topics.map((topic,topicIndex)=>{
+      const values=topicValues(topic);
+      const filled=values.some(item=>item.value);
+      if(filled) filledCount++;
+      const content=filled
+        ? values.filter(item=>item.value).map(item=>`<div class="saved-field"><strong>${esc(item.label)}</strong><p>${esc(item.value)}</p></div>`).join('')
+        : '<p class="topic-empty">Nog niet ingevuld. Voeg hier de tekst voor dit onderdeel toe.</p>';
+      const number=`${group.n}.${topicIndex+1}`;
+      return `<article class="topic-card ${filled?'filled':''}" data-topic-card="${groupIndex}-${topicIndex}">
+        <div class="topic-card-head">
+          <div class="topic-card-title"><span class="topic-index">Onderdeel ${number}</span><h4>${esc(topic.title)}</h4></div>
+          <span class="topic-state">${filled?'Ingevuld':'Nog leeg'}</span>
+        </div>
+        <div class="topic-content">${content}</div>
+        <button class="topic-edit-btn" type="button" data-edit-topic="${groupIndex}-${topicIndex}">${filled?'Aanpassen':'Invullen'}</button>
+      </article>`;
+    }).join('');
+
+    const progress=document.getElementById(`progress-${groupIndex+1}`);
+    if(progress) progress.textContent=`${filledCount} van ${group.topics.length} onderdelen ingevuld`;
+  });
+
+  document.querySelectorAll('[data-edit-topic]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      const [groupIndex,topicIndex]=button.dataset.editTopic.split('-').map(Number);
+      openEditor(groupIndex,topicIndex);
+    });
   });
 }
 
-function updateCompletion(){
-  let started=0;
-  document.querySelectorAll('.edit-card').forEach((card,index)=>{
-    const values=groupValues(groups[index]);
-    const has=values.some(item=>item.value);
-    card.classList.toggle('has-content',has);
-    const state=card.querySelector('.edit-state');
-    if(state) state.textContent=has?'Gestart':'Nog leeg';
-    if(has) started++;
+function centerWindow(){
+  if(!editorWindow) return;
+  editorWindow.style.right='auto';
+  editorWindow.style.bottom='auto';
+  editorWindow.style.left='16px';
+  editorWindow.style.top='90px';
+  requestAnimationFrame(()=>{
+    const rect=editorWindow.getBoundingClientRect();
+    const left=Math.max(12,(window.innerWidth-rect.width)/2);
+    const top=Math.max(72,(window.innerHeight-rect.height)/2);
+    editorWindow.style.left=`${left}px`;
+    editorWindow.style.top=`${top}px`;
   });
-  const progress=document.getElementById('progressText');
-  if(progress) progress.textContent=`${started} van 6 hoofdstukken gestart`;
 }
 
-function updateUI(){
-  updateCompletion();
-  updatePreviews();
+function markModalDirty(){
+  modalDirty=true;
+  if(windowSaveHint){
+    windowSaveHint.textContent='Wijzigingen zijn nog niet opgeslagen.';
+    windowSaveHint.classList.remove('saved');
+  }
 }
 
-loadSaved();
-updateUI();
+function openEditor(groupIndex,topicIndex){
+  const group=groups[groupIndex];
+  const topic=group?.topics[topicIndex];
+  if(!group||!topic) return;
 
-fields.forEach(field=>field.addEventListener('input',()=>{
-  setStatus('Bezig met opslaan…','saving');
-  updateUI();
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>saveNow(false),450);
-}));
+  activeGroupIndex=groupIndex;
+  activeTopicIndex=topicIndex;
+  modalDirty=false;
+  restorePosition=null;
 
-document.getElementById('saveBtn')?.addEventListener('click',()=>saveNow(true));
-document.getElementById('saveBottomBtn')?.addEventListener('click',()=>saveNow(true));
+  windowKicker.textContent=`Hoofdstuk ${group.n} · onderdeel ${topicIndex+1}`;
+  windowTitle.textContent=topic.title;
+  windowHelp.textContent=`Werk alleen dit onderdeel uit. Klik op Opslaan om de tekst direct onder “${topic.title}” in het portfolio te tonen.`;
+  modalFields.innerHTML=topic.fields.map(([id,label,help])=>`<div class="modal-field"><label for="modal-${esc(id)}">${esc(label)}<small>${esc(help)}</small></label><textarea id="modal-${esc(id)}" data-modal-field="${esc(id)}"></textarea></div>`).join('');
+
+  modalFields.querySelectorAll('[data-modal-field]').forEach(field=>{
+    field.value=state.values[field.dataset.modalField]||'';
+    field.addEventListener('input',markModalDirty);
+  });
+
+  windowSaveHint.textContent=isTopicFilled(topic)?'Bestaande tekst geladen.':'Dit onderdeel is nog leeg.';
+  windowSaveHint.classList.toggle('saved',isTopicFilled(topic));
+  editorWindow.classList.remove('minimized');
+  minimizeBtn.textContent='−';
+  minimizeBtn.setAttribute('aria-label','Minimaliseren');
+  minimizeBtn.title='Minimaliseren';
+  windowLayer.hidden=false;
+  centerWindow();
+  setTimeout(()=>modalFields.querySelector('textarea')?.focus(),80);
+}
+
+function hasUnsavedModalChanges(){
+  if(!modalDirty||activeGroupIndex===null||activeTopicIndex===null) return false;
+  const topic=groups[activeGroupIndex].topics[activeTopicIndex];
+  return topic.fields.some(([id])=>{
+    const field=modalFields.querySelector(`[data-modal-field="${id}"]`);
+    return (field?.value||'') !== (state.values[id]||'');
+  });
+}
+
+function closeEditor(force=false){
+  if(!force && hasUnsavedModalChanges()){
+    const ok=window.confirm('Je hebt wijzigingen die nog niet zijn opgeslagen. Toch sluiten?');
+    if(!ok) return;
+  }
+  windowLayer.hidden=true;
+  editorWindow.classList.remove('minimized');
+  activeGroupIndex=null;
+  activeTopicIndex=null;
+  modalDirty=false;
+  dragState=null;
+  restorePosition=null;
+}
+
+function saveActiveTopic(){
+  if(activeGroupIndex===null||activeTopicIndex===null) return;
+  const topic=groups[activeGroupIndex].topics[activeTopicIndex];
+  topic.fields.forEach(([id])=>{
+    const field=modalFields.querySelector(`[data-modal-field="${id}"]`);
+    state.values[id]=field?.value||'';
+  });
+  if(!persistState(`${topic.title} opgeslagen`)) return;
+  const savedGroupIndex=activeGroupIndex;
+  const savedTopicIndex=activeTopicIndex;
+  modalDirty=false;
+  renderChapters();
+  closeEditor(true);
+  document.querySelector(`[data-topic-card="${savedGroupIndex}-${savedTopicIndex}"]`)?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function toggleMinimize(){
+  if(windowLayer.hidden) return;
+  const minimized=editorWindow.classList.toggle('minimized');
+  if(minimized){
+    const rect=editorWindow.getBoundingClientRect();
+    restorePosition={left:rect.left,top:rect.top};
+    editorWindow.style.left='auto';
+    editorWindow.style.top='auto';
+    editorWindow.style.right='18px';
+    editorWindow.style.bottom='18px';
+    minimizeBtn.textContent='□';
+    minimizeBtn.setAttribute('aria-label','Herstellen');
+    minimizeBtn.title='Herstellen';
+  }else{
+    editorWindow.style.right='auto';
+    editorWindow.style.bottom='auto';
+    editorWindow.style.left=`${Math.max(8,restorePosition?.left??20)}px`;
+    editorWindow.style.top=`${Math.max(60,restorePosition?.top??90)}px`;
+    minimizeBtn.textContent='−';
+    minimizeBtn.setAttribute('aria-label','Minimaliseren');
+    minimizeBtn.title='Minimaliseren';
+  }
+}
+
+function clampWindowPosition(left,top){
+  const rect=editorWindow.getBoundingClientRect();
+  const maxLeft=Math.max(8,window.innerWidth-Math.min(rect.width,window.innerWidth-16)-8);
+  const maxTop=Math.max(58,window.innerHeight-Math.min(rect.height,window.innerHeight-16)-8);
+  return {
+    left:Math.min(Math.max(8,left),maxLeft),
+    top:Math.min(Math.max(58,top),maxTop)
+  };
+}
+
+windowDragHandle?.addEventListener('pointerdown',event=>{
+  if(event.target.closest('button')) return;
+  const rect=editorWindow.getBoundingClientRect();
+  dragState={pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top};
+  windowDragHandle.setPointerCapture(event.pointerId);
+  body.classList.add('window-dragging');
+  editorWindow.style.right='auto';
+  editorWindow.style.bottom='auto';
+});
+
+windowDragHandle?.addEventListener('pointermove',event=>{
+  if(!dragState||dragState.pointerId!==event.pointerId) return;
+  const next=clampWindowPosition(event.clientX-dragState.offsetX,event.clientY-dragState.offsetY);
+  editorWindow.style.left=`${next.left}px`;
+  editorWindow.style.top=`${next.top}px`;
+});
+
+function stopDragging(event){
+  if(!dragState) return;
+  if(event && dragState.pointerId!==event.pointerId) return;
+  try{windowDragHandle.releasePointerCapture(dragState.pointerId);}catch(_err){}
+  dragState=null;
+  body.classList.remove('window-dragging');
+}
+windowDragHandle?.addEventListener('pointerup',stopDragging);
+windowDragHandle?.addEventListener('pointercancel',stopDragging);
+
+window.addEventListener('resize',()=>{
+  if(windowLayer.hidden||editorWindow.classList.contains('minimized')) return;
+  const rect=editorWindow.getBoundingClientRect();
+  const next=clampWindowPosition(rect.left,rect.top);
+  editorWindow.style.left=`${next.left}px`;
+  editorWindow.style.top=`${next.top}px`;
+});
+
+document.getElementById('closeBtn')?.addEventListener('click',()=>closeEditor(false));
+document.getElementById('cancelBtn')?.addEventListener('click',()=>closeEditor(false));
+document.getElementById('topicSaveBtn')?.addEventListener('click',saveActiveTopic);
+minimizeBtn?.addEventListener('click',toggleMinimize);
+
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&!windowLayer.hidden) closeEditor(false);
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'&&!windowLayer.hidden){
+    event.preventDefault();
+    saveActiveTopic();
+  }
+});
 
 function exportBackup(){
-  const data=JSON.stringify(getState(),null,2);
+  const data=JSON.stringify({...state,exportedAt:new Date().toISOString()},null,2);
   const blob=new Blob([data],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  const stamp=new Date().toISOString().slice(0,10);
   a.href=url;
-  a.download=`portfolio-tineke-backup-${stamp}.json`;
+  a.download=`portfolio-tineke-backup-${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 }
-document.getElementById('exportBtn')?.addEventListener('click',exportBackup);
 
+document.getElementById('exportBtn')?.addEventListener('click',exportBackup);
 document.getElementById('importBtn')?.addEventListener('click',()=>document.getElementById('importFile')?.click());
 document.getElementById('importFile')?.addEventListener('change',async event=>{
   const file=event.target.files?.[0];
   if(!file) return;
   try{
     const data=JSON.parse(await file.text());
-    Object.entries(data.values||{}).forEach(([id,value])=>{
-      const field=document.getElementById(id);
-      if(field) field.value=value ?? '';
-    });
-    saveNow(true);
+    if(!data||typeof data.values!=='object') throw new Error('invalid');
+    state={version:2,updatedAt:new Date().toISOString(),values:{...data.values}};
+    if(persistState('Back-up teruggezet')) renderChapters();
   }catch(err){
     setStatus('Back-up is niet geldig','error');
   }
   event.target.value='';
 });
 
-document.querySelectorAll('[data-open-group]').forEach(link=>link.addEventListener('click',()=>{
-  const num=link.getAttribute('data-open-group');
-  const card=document.querySelector(`.edit-card[data-group="${num}"]`);
-  if(card) card.open=true;
-}));
-
 const navLinks=[...document.querySelectorAll('.nav a')];
-navLinks.forEach(link=>link.addEventListener('click',()=>{
-  body.classList.remove('menu-open');
-  menuBtn?.setAttribute('aria-expanded','false');
-}));
-
 const observed=[...document.querySelectorAll('main section[id]')];
 const observer=new IntersectionObserver(entries=>{
   const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
@@ -223,3 +378,6 @@ const observer=new IntersectionObserver(entries=>{
   navLinks.forEach(link=>link.classList.toggle('active',link.getAttribute('href')===href));
 },{rootMargin:'-15% 0px -65% 0px',threshold:[0,.1,.35]});
 observed.forEach(section=>observer.observe(section));
+
+loadState();
+renderChapters();
