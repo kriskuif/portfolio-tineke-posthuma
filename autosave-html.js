@@ -126,18 +126,19 @@
       throw new Error('unsupported');
     }
 
-    if (!fileHandle) fileHandle = await getStoredHandle();
-
+    // Belangrijk: vóór de eerste await direct de bestandskiezer of permissievraag starten.
+    // Browsers staan dit alleen toe vanuit de bewuste Opslaan-actie van de gebruiker.
     if (fileHandle) {
       try {
-        const permission = await fileHandle.requestPermission({ mode: 'readwrite' });
+        const permissionPromise = fileHandle.requestPermission({ mode: 'readwrite' });
+        const permission = await permissionPromise;
         if (permission === 'granted') return fileHandle;
       } catch (_err) {
         fileHandle = null;
       }
     }
 
-    fileHandle = await window.showSaveFilePicker({
+    const pickerPromise = window.showSaveFilePicker({
       id: 'portfolio-tineke-html',
       suggestedName: FILE_NAME,
       types: [{
@@ -145,6 +146,7 @@
         accept: { 'text/html': ['.html'] }
       }]
     });
+    fileHandle = await pickerPromise;
     await storeHandle(fileHandle);
     return fileHandle;
   }
