@@ -5,6 +5,11 @@ menuBtn?.addEventListener('click', () => {
   menuBtn.setAttribute('aria-expanded', String(open));
 });
 
+// Keep the hero photo untransformed. Rotating a scaled image can cause
+// visible GPU/compositing seams in some browsers.
+const heroPhotoCard = document.querySelector('.hero-photo-card');
+if (heroPhotoCard) heroPhotoCard.style.transform = 'none';
+
 const links = [...document.querySelectorAll('.nav a')];
 links.forEach(link => link.addEventListener('click', () => {
   body.classList.remove('menu-open');
