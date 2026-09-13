@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1f5e4a">
   <meta name="description" content="Portfolio Wandeltrainer 3 van Tineke Posthuma.">
   <title>Portfolio Tineke Posthuma · Wandeltrainer 3</title>
-  <link rel="stylesheet" href="styles.css?v=20260913-2145">
+  <link rel="stylesheet" href="styles.css?v=20260913-2215">
 </head>
 <body>
 <div class="app">
@@ -160,32 +160,7 @@
   </div>
 </div>
 
-<div class="window-layer" id="windowLayer" hidden>
-  <section class="editor-window" id="editorWindow" role="dialog" aria-modal="false" aria-labelledby="windowTitle">
-    <header class="window-bar" id="windowDragHandle">
-      <div class="window-title-wrap">
-        <span class="window-kicker" id="windowKicker">Onderdeel bewerken</span>
-        <strong id="windowTitle">Onderdeel</strong>
-      </div>
-      <div class="window-controls">
-        <button class="window-control" id="minimizeBtn" type="button" aria-label="Minimaliseren" title="Minimaliseren">−</button>
-        <button class="window-control close" id="closeBtn" type="button" aria-label="Sluiten" title="Sluiten">×</button>
-      </div>
-    </header>
-    <div class="window-body">
-      <p class="window-help" id="windowHelp"></p>
-      <div class="modal-fields" id="modalFields"></div>
-    </div>
-    <footer class="window-footer">
-      <span class="window-save-hint" id="windowSaveHint">Wijzigingen zijn nog niet opgeslagen.</span>
-      <div class="window-actions">
-        <button class="text-button" id="cancelBtn" type="button">Sluiten</button>
-        <button class="save-large" id="topicSaveBtn" type="button">Opslaan</button>
-      </div>
-    </footer>
-  </section>
-</div>
-
-<script src="script.js?v=20260913-2145"></script>
+<div class="window-layer" id="windowLayer" hidden aria-live="polite"></div>
+<script src="script.js?v=20260913-2215"></script>
 </body>
 </html>
