@@ -132,7 +132,7 @@ function updatePreviews(){
     if(!target) return;
     const filled=groupValues(group).filter(item=>item.value);
     if(!filled.length){
-      target.innerHTML='<div class="preview-empty">Nog niet ingevuld. Gebruik “Dit hoofdstuk invullen” om hier inhoud toe te voegen.</div>';
+      target.innerHTML='<div class="preview-empty">Nog niet ingevuld. Gebruik “Dit hoofdstuk invullen of aanpassen” om hier inhoud toe te voegen.</div>';
       return;
     }
     target.innerHTML=filled.map(item=>`<article class="preview-item"><h4>${esc(item.label)}</h4><p>${esc(item.value)}</p></article>`).join('');
@@ -177,8 +177,12 @@ function exportBackup(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   const stamp=new Date().toISOString().slice(0,10);
-  a.href=url;a.download=`portfolio-tineke-backup-${stamp}.json`;
-  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  a.href=url;
+  a.download=`portfolio-tineke-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 document.getElementById('exportBtn')?.addEventListener('click',exportBackup);
 
@@ -211,7 +215,7 @@ navLinks.forEach(link=>link.addEventListener('click',()=>{
   menuBtn?.setAttribute('aria-expanded','false');
 }));
 
-const observed=[...document.querySelectorAll('#start, .portfolio-group, #invullen')];
+const observed=[...document.querySelectorAll('main section[id]')];
 const observer=new IntersectionObserver(entries=>{
   const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
   if(!visible) return;
