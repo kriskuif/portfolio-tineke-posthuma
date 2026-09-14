@@ -9,19 +9,35 @@
 
   const style=document.createElement('style');
   style.textContent=`
+    /* Beheerweergave: behoud exact de normale portfolio-breedte en gebruik de vrije ruimte rechts als chatrail. */
     body.can-edit.admin-notes-visible main{
-      width:calc(100% - 4px)!important;
-      max-width:none!important;
-      margin-left:4px!important;
-      margin-right:0!important;
+      width:min(1180px,calc(100% - 42px))!important;
+      max-width:1180px!important;
+      margin-left:14px!important;
+      margin-right:auto!important;
+      overflow:visible!important;
+    }
+    .admin-chat-host{
+      --admin-chat-gap:12px!important;
+      --admin-chat-width:clamp(120px,calc(100vw - var(--sidebar) - 1180px - 42px),340px)!important;
     }
     body.can-edit.admin-notes-visible .admin-chat-host{
-      padding-right:calc(var(--admin-chat-width) + var(--admin-chat-gap) + 8px)!important;
+      padding-right:var(--admin-host-pad)!important;
     }
     body.can-edit.admin-notes-visible .admin-section-chat{
-      right:8px!important;
+      top:0!important;
+      bottom:0!important;
+      right:calc(-1 * (var(--admin-chat-width) + var(--admin-chat-gap)))!important;
+      width:var(--admin-chat-width)!important;
+      max-width:340px!important;
     }
-    .admin-chat-host{--admin-chat-gap:10px!important}
+
+    /* De hero clipte de chat vroeger. Alleen in beheer mag de chat erbuiten vallen;
+       de decoratieve cirkels worden afzonderlijk op hun oorspronkelijke rand afgeknipt. */
+    body.can-edit.admin-notes-visible .hero.admin-chat-host{overflow:visible!important}
+    body.can-edit.admin-notes-visible .hero.admin-chat-host:before{clip-path:inset(125px 130px 0 0)}
+    body.can-edit.admin-notes-visible .hero.admin-chat-host:after{clip-path:inset(0 0 190px 0)}
+
     .admin-chat-head strong{
       white-space:normal!important;
       overflow:visible!important;
@@ -45,15 +61,30 @@
     .admin-ribbon-notes .admin-chat-author{color:#174838!important}
     .admin-ribbon-notes .admin-chat-meta{color:#7c8982!important}
 
-    @media(max-width:930px){
+    /* Als er echt geen rechterrail meer overblijft, valt de chat netjes onder het blok. */
+    @media(max-width:1520px){
       body.can-edit.admin-notes-visible main{
-        width:min(100% - 24px,1180px)!important;
+        width:min(1180px,calc(100% - 24px))!important;
         margin:0 auto!important;
       }
       body.can-edit.admin-notes-visible .admin-chat-host{
         padding-right:var(--admin-host-pad)!important;
       }
-      body.can-edit.admin-notes-visible .admin-section-chat{right:auto!important}
+      body.can-edit.admin-notes-visible .admin-section-chat{
+        position:relative!important;
+        inset:auto!important;
+        width:100%!important;
+        max-width:none!important;
+        max-height:300px!important;
+        margin-top:16px!important;
+      }
+      body.can-edit.admin-notes-visible .admin-section-chat .admin-chat-messages{
+        min-height:100px;
+        max-height:185px;
+      }
+      body.can-edit.admin-notes-visible .hero.admin-chat-host{overflow:hidden!important}
+      body.can-edit.admin-notes-visible .hero.admin-chat-host:before,
+      body.can-edit.admin-notes-visible .hero.admin-chat-host:after{clip-path:none}
     }
   `;
   document.head.appendChild(style);
