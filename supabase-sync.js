@@ -87,7 +87,11 @@
       <button class="auth-close" type="button" aria-label="Sluiten">×</button>
       <h3>Portfolio beheren</h3>
       <p>${currentSession ? signedInText : 'Log in om portfolio-onderdelen te kunnen invullen en op de openbare website op te slaan.'}</p>
-      ${currentSession ? '' : `<div class="auth-fields"><input type="email" data-auth-email placeholder="E-mailadres"><input type="password" data-auth-password placeholder="Wachtwoord"></div>`}
+      ${currentSession ? '' : `<div class="auth-fields">
+        <input type="email" data-auth-email placeholder="E-mailadres" autocomplete="email">
+        <input type="password" data-auth-password placeholder="Wachtwoord" autocomplete="current-password">
+        <input type="password" data-auth-password-confirm placeholder="Herhaal wachtwoord (alleen bij registratie)" autocomplete="new-password">
+      </div>`}
       <div class="auth-actions">
         ${currentSession
           ? '<button type="button" data-auth-logout>Uitloggen</button>'
@@ -102,7 +106,8 @@
     const message = overlay.querySelector('[data-auth-message]');
     const credentials = () => ({
       email: overlay.querySelector('[data-auth-email]')?.value.trim(),
-      password: overlay.querySelector('[data-auth-password]')?.value || ''
+      password: overlay.querySelector('[data-auth-password]')?.value || '',
+      passwordConfirm: overlay.querySelector('[data-auth-password-confirm]')?.value || ''
     });
 
     overlay.querySelector('[data-auth-login]')?.addEventListener('click', async()=>{
@@ -128,8 +133,21 @@
     });
 
     overlay.querySelector('[data-auth-signup]')?.addEventListener('click', async()=>{
-      const {email,password}=credentials();
-      if(!email||password.length<8){ message.textContent='Gebruik een geldig e-mailadres en een wachtwoord van minimaal 8 tekens.'; return; }
+      const {email,password,passwordConfirm}=credentials();
+      if(!email||password.length<8){
+        message.textContent='Gebruik een geldig e-mailadres en een wachtwoord van minimaal 8 tekens.';
+        return;
+      }
+      if(!passwordConfirm){
+        message.textContent='Vul het wachtwoord nogmaals in ter controle.';
+        overlay.querySelector('[data-auth-password-confirm]')?.focus();
+        return;
+      }
+      if(password!==passwordConfirm){
+        message.textContent='De twee wachtwoorden komen niet overeen. Controleer ze en probeer opnieuw.';
+        overlay.querySelector('[data-auth-password-confirm]')?.focus();
+        return;
+      }
       message.textContent='Account aanmaken…';
       const { error } = await client.auth.signUp({
         email,
