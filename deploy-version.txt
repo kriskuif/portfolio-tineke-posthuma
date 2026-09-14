@@ -1,0 +1,2 @@
+2026-09-14T06:57:00+02:00
+Publishes latest main, including standalone HTML export scroll fix.
