@@ -1,6 +1,7 @@
 (() => {
   const SUPABASE_URL = 'https://yvxiuslhypwbjkpmtfwy.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
+  const SITE_URL = 'https://kriskuif.github.io/portfolio-tineke-posthuma/';
   const client = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_KEY);
   if (!client) return;
 
@@ -11,12 +12,12 @@
     .manage-btn{margin-left:auto;border:1px solid #dce7df;background:#fff;color:#1f5e4a;padding:8px 12px;border-radius:11px;font-weight:800;cursor:pointer}
     body.can-edit .manage-btn{margin-left:0}
     .auth-overlay{position:fixed;inset:0;z-index:3000;background:rgba(20,38,31,.36);display:grid;place-items:center;padding:20px}
-    .auth-card{width:min(420px,100%);background:#fff;border-radius:20px;box-shadow:0 26px 80px rgba(20,43,34,.28);padding:22px;border:1px solid #dfe5df}
+    .auth-card{width:min(440px,100%);background:#fff;border-radius:20px;box-shadow:0 26px 80px rgba(20,43,34,.28);padding:22px;border:1px solid #dfe5df}
     .auth-card h3{margin:0 0 5px;font-family:Georgia,serif;color:#234f42}
     .auth-card p{margin:0 0 16px;color:#66746e;font-size:.88rem}
     .auth-fields{display:grid;gap:10px}.auth-fields input{width:100%;padding:11px 12px;border:1px solid #ced9d2;border-radius:11px;font:inherit}
     .auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.auth-actions button{border:0;border-radius:11px;padding:9px 12px;font-weight:800;cursor:pointer;background:#1f5e4a;color:#fff}.auth-actions button.secondary{background:#eef3ef;color:#1f5e4a;border:1px solid #dce7df}
-    .auth-close{float:right;border:0;background:transparent;font-size:1.3rem;cursor:pointer;color:#66746e}.auth-message{margin-top:12px!important;font-size:.8rem!important}
+    .auth-close{float:right;border:0;background:transparent;font-size:1.3rem;cursor:pointer;color:#66746e}.auth-message{margin-top:12px!important;font-size:.8rem!important;white-space:pre-line}
   `;
   document.head.appendChild(style);
 
@@ -28,12 +29,31 @@
   topbar?.appendChild(manageBtn);
 
   let currentSession = null;
-  let remoteReady = false;
+  let canEdit = false;
 
-  function setCanEdit(session){
+  async function userIsEditor(session){
+    if(!session?.user?.email) return false;
+    try{
+      const { data, error } = await client
+        .from('portfolio_editors')
+        .select('email')
+        .eq('email', session.user.email.toLowerCase())
+        .maybeSingle();
+      if(error) throw error;
+      return !!data;
+    }catch(err){
+      console.error('Beheerdercontrole mislukt:', err);
+      return false;
+    }
+  }
+
+  async function setCanEdit(session){
     currentSession = session || null;
-    document.body.classList.toggle('can-edit', !!session);
-    manageBtn.textContent = session ? 'Beheer · ingelogd' : 'Beheer';
+    canEdit = currentSession ? await userIsEditor(currentSession) : false;
+    document.body.classList.toggle('can-edit', canEdit);
+    if(currentSession && canEdit) manageBtn.textContent = 'Beheer · ingelogd';
+    else if(currentSession) manageBtn.textContent = 'Beheer · geen toegang';
+    else manageBtn.textContent = 'Beheer';
     renderChapters?.();
   }
 
@@ -49,7 +69,6 @@
         renderChapters();
         setStatus('Portfolio geladen','saved');
       }
-      remoteReady = true;
     }catch(err){
       console.error('Portfolio laden mislukt:', err);
       setStatus('Online inhoud kon niet worden geladen','error');
@@ -61,13 +80,18 @@
     if(existing){ existing.remove(); return; }
     const overlay = document.createElement('div');
     overlay.className = 'auth-overlay';
+    const signedInText = canEdit
+      ? 'Je bent ingelogd en kunt de portfolio-onderdelen aanpassen.'
+      : 'Je bent ingelogd, maar dit account staat niet op de beheerderslijst.';
     overlay.innerHTML = `<div class="auth-card">
       <button class="auth-close" type="button" aria-label="Sluiten">×</button>
       <h3>Portfolio beheren</h3>
-      <p>${currentSession ? 'Je bent ingelogd en kunt de portfolio-onderdelen aanpassen.' : 'Log in om portfolio-onderdelen te kunnen invullen en op de openbare website op te slaan.'}</p>
+      <p>${currentSession ? signedInText : 'Log in om portfolio-onderdelen te kunnen invullen en op de openbare website op te slaan.'}</p>
       ${currentSession ? '' : `<div class="auth-fields"><input type="email" data-auth-email placeholder="E-mailadres"><input type="password" data-auth-password placeholder="Wachtwoord"></div>`}
       <div class="auth-actions">
-        ${currentSession ? '<button type="button" data-auth-logout>Uitloggen</button>' : '<button type="button" data-auth-login>Inloggen</button><button type="button" class="secondary" data-auth-signup>Account aanmaken</button>'}
+        ${currentSession
+          ? '<button type="button" data-auth-logout>Uitloggen</button>'
+          : '<button type="button" data-auth-login>Inloggen</button><button type="button" class="secondary" data-auth-signup>Account aanmaken</button><button type="button" class="secondary" data-auth-resend>Bevestigingsmail opnieuw sturen</button>'}
       </div>
       <p class="auth-message" data-auth-message></p>
     </div>`;
@@ -86,8 +110,19 @@
       if(!email||!password){ message.textContent='Vul e-mailadres en wachtwoord in.'; return; }
       message.textContent='Inloggen…';
       const { data, error } = await client.auth.signInWithPassword({email,password});
-      if(error){ message.textContent='Inloggen mislukt: '+error.message; return; }
-      setCanEdit(data.session);
+      if(error){
+        if(error.message?.toLowerCase().includes('email not confirmed')){
+          message.textContent='Je e-mailadres is nog niet bevestigd. Gebruik “Bevestigingsmail opnieuw sturen”.';
+        }else{
+          message.textContent='Inloggen mislukt: '+error.message;
+        }
+        return;
+      }
+      await setCanEdit(data.session);
+      if(!canEdit){
+        message.textContent='Dit account is ingelogd, maar heeft geen beheerrechten voor dit portfolio.';
+        return;
+      }
       message.textContent='Ingelogd.';
       setTimeout(()=>overlay.remove(),500);
     });
@@ -96,21 +131,37 @@
       const {email,password}=credentials();
       if(!email||password.length<8){ message.textContent='Gebruik een geldig e-mailadres en een wachtwoord van minimaal 8 tekens.'; return; }
       message.textContent='Account aanmaken…';
-      const { error } = await client.auth.signUp({email,password});
+      const { error } = await client.auth.signUp({
+        email,
+        password,
+        options:{ emailRedirectTo: SITE_URL }
+      });
       if(error){ message.textContent='Account maken mislukt: '+error.message; return; }
-      message.textContent='Account aangemaakt. Controleer je e-mail om het account te bevestigen. Daarna kun je hier inloggen.';
+      message.textContent='Account aangemaakt. Controleer je e-mail en gebruik de nieuwste bevestigingslink. Daarna kom je terug op deze portfoliosite.';
+    });
+
+    overlay.querySelector('[data-auth-resend]')?.addEventListener('click', async()=>{
+      const {email}=credentials();
+      if(!email){ message.textContent='Vul eerst je e-mailadres in.'; return; }
+      message.textContent='Nieuwe bevestigingsmail versturen…';
+      const { error } = await client.auth.resend({
+        type:'signup',
+        email,
+        options:{ emailRedirectTo: SITE_URL }
+      });
+      if(error){ message.textContent='Opnieuw versturen mislukt: '+error.message; return; }
+      message.textContent='Nieuwe bevestigingsmail verstuurd. Gebruik alleen de nieuwste link; oudere links kunnen verlopen zijn.';
     });
 
     overlay.querySelector('[data-auth-logout]')?.addEventListener('click', async()=>{
       await client.auth.signOut();
-      setCanEdit(null);
+      await setCanEdit(null);
       overlay.remove();
     });
   }
 
   manageBtn.addEventListener('click',openAuth);
 
-  const originalSaveWindow = saveWindow;
   saveWindow = async function(win){
     if(!win || !openWindows.has(win.key)) return;
     const { data: sessionData } = await client.auth.getSession();
@@ -118,6 +169,10 @@
     if(!session){
       setStatus('Log eerst in om wijzigingen op de website op te slaan','error');
       openAuth();
+      return;
+    }
+    if(!(await userIsEditor(session))){
+      setStatus('Dit account heeft geen beheerrechten','error');
       return;
     }
 
