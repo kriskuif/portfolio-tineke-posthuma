@@ -17,6 +17,8 @@
     .auth-card p{margin:0 0 16px;color:#66746e;font-size:.88rem}
     .auth-fields{display:grid;gap:10px}.auth-fields input{width:100%;padding:11px 12px;border:1px solid #ced9d2;border-radius:11px;font:inherit}
     .auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.auth-actions button{border:0;border-radius:11px;padding:9px 12px;font-weight:800;cursor:pointer;background:#1f5e4a;color:#fff}.auth-actions button.secondary{background:#eef3ef;color:#1f5e4a;border:1px solid #dce7df}
+    .auth-link{border:0;background:transparent;color:#1f5e4a;padding:0;font:inherit;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+    .auth-switch{margin-top:16px!important;margin-bottom:0!important}
     .auth-close{float:right;border:0;background:transparent;font-size:1.3rem;cursor:pointer;color:#66746e}.auth-message{margin-top:12px!important;font-size:.8rem!important;white-space:pre-line}
   `;
   document.head.appendChild(style);
@@ -75,110 +77,150 @@
     }
   }
 
-  function openAuth(){
+  function openAuth(mode='login'){
     const existing = document.querySelector('.auth-overlay');
-    if(existing){ existing.remove(); return; }
+    if(existing) existing.remove();
+
     const overlay = document.createElement('div');
     overlay.className = 'auth-overlay';
-    const signedInText = canEdit
-      ? 'Je bent ingelogd en kunt de portfolio-onderdelen aanpassen.'
-      : 'Je bent ingelogd, maar dit account staat niet op de beheerderslijst.';
-    overlay.innerHTML = `<div class="auth-card">
-      <button class="auth-close" type="button" aria-label="Sluiten">×</button>
-      <h3>Portfolio beheren</h3>
-      <p>${currentSession ? signedInText : 'Log in om portfolio-onderdelen te kunnen invullen en op de openbare website op te slaan.'}</p>
-      ${currentSession ? '' : `<div class="auth-fields">
-        <input type="email" data-auth-email placeholder="E-mailadres" autocomplete="email">
-        <input type="password" data-auth-password placeholder="Wachtwoord" autocomplete="current-password">
-        <input type="password" data-auth-password-confirm placeholder="Herhaal wachtwoord (alleen bij registratie)" autocomplete="new-password">
-      </div>`}
-      <div class="auth-actions">
-        ${currentSession
-          ? '<button type="button" data-auth-logout>Uitloggen</button>'
-          : '<button type="button" data-auth-login>Inloggen</button><button type="button" class="secondary" data-auth-signup>Account aanmaken</button><button type="button" class="secondary" data-auth-resend>Bevestigingsmail opnieuw sturen</button>'}
-      </div>
-      <p class="auth-message" data-auth-message></p>
-    </div>`;
     document.body.appendChild(overlay);
-    overlay.querySelector('.auth-close')?.addEventListener('click',()=>overlay.remove());
-    overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.remove(); });
 
-    const message = overlay.querySelector('[data-auth-message]');
-    const credentials = () => ({
-      email: overlay.querySelector('[data-auth-email]')?.value.trim(),
-      password: overlay.querySelector('[data-auth-password]')?.value || '',
-      passwordConfirm: overlay.querySelector('[data-auth-password-confirm]')?.value || ''
-    });
+    const closeOverlay = () => overlay.remove();
 
-    overlay.querySelector('[data-auth-login]')?.addEventListener('click', async()=>{
-      const {email,password}=credentials();
-      if(!email||!password){ message.textContent='Vul e-mailadres en wachtwoord in.'; return; }
-      message.textContent='Inloggen…';
-      const { data, error } = await client.auth.signInWithPassword({email,password});
-      if(error){
-        if(error.message?.toLowerCase().includes('email not confirmed')){
-          message.textContent='Je e-mailadres is nog niet bevestigd. Gebruik “Bevestigingsmail opnieuw sturen”.';
-        }else{
-          message.textContent='Inloggen mislukt: '+error.message;
+    function renderAuthView(nextMode=mode){
+      mode = nextMode;
+
+      if(currentSession){
+        const signedInText = canEdit
+          ? 'Je bent ingelogd en kunt de portfolio-onderdelen aanpassen.'
+          : 'Je bent ingelogd, maar dit account staat niet op de beheerderslijst.';
+        overlay.innerHTML = `<div class="auth-card">
+          <button class="auth-close" type="button" aria-label="Sluiten">×</button>
+          <h3>Portfolio beheren</h3>
+          <p>${signedInText}</p>
+          <div class="auth-actions"><button type="button" data-auth-logout>Uitloggen</button></div>
+        </div>`;
+        overlay.querySelector('.auth-close')?.addEventListener('click',closeOverlay);
+        overlay.querySelector('[data-auth-logout]')?.addEventListener('click', async()=>{
+          await client.auth.signOut();
+          await setCanEdit(null);
+          closeOverlay();
+        });
+        return;
+      }
+
+      if(mode === 'register'){
+        overlay.innerHTML = `<div class="auth-card">
+          <button class="auth-close" type="button" aria-label="Sluiten">×</button>
+          <h3>Account aanmaken</h3>
+          <p>Alleen vooraf goedgekeurde e-mailadressen kunnen een beheeraccount aanmaken.</p>
+          <div class="auth-fields">
+            <input type="email" data-auth-email placeholder="E-mailadres" autocomplete="email">
+            <input type="password" data-auth-password placeholder="Kies een wachtwoord" autocomplete="new-password">
+            <input type="password" data-auth-password-confirm placeholder="Herhaal wachtwoord" autocomplete="new-password">
+          </div>
+          <div class="auth-actions">
+            <button type="button" data-auth-signup>Account aanmaken</button>
+            <button type="button" class="secondary" data-auth-resend>Bevestigingsmail opnieuw sturen</button>
+          </div>
+          <p class="auth-switch">Heb je al een account? <button type="button" class="auth-link" data-auth-show-login>Terug naar inloggen</button></p>
+          <p class="auth-message" data-auth-message></p>
+        </div>`;
+
+        const message = overlay.querySelector('[data-auth-message]');
+        const getCredentials = () => ({
+          email: overlay.querySelector('[data-auth-email]')?.value.trim() || '',
+          password: overlay.querySelector('[data-auth-password]')?.value || '',
+          passwordConfirm: overlay.querySelector('[data-auth-password-confirm]')?.value || ''
+        });
+
+        overlay.querySelector('.auth-close')?.addEventListener('click',closeOverlay);
+        overlay.querySelector('[data-auth-show-login]')?.addEventListener('click',()=>renderAuthView('login'));
+        overlay.querySelector('[data-auth-signup]')?.addEventListener('click', async()=>{
+          const {email,password,passwordConfirm}=getCredentials();
+          if(!email||password.length<8){
+            message.textContent='Gebruik een geldig e-mailadres en een wachtwoord van minimaal 8 tekens.';
+            return;
+          }
+          if(!passwordConfirm){
+            message.textContent='Vul het wachtwoord nogmaals in ter controle.';
+            overlay.querySelector('[data-auth-password-confirm]')?.focus();
+            return;
+          }
+          if(password!==passwordConfirm){
+            message.textContent='De twee wachtwoorden komen niet overeen. Controleer ze en probeer opnieuw.';
+            overlay.querySelector('[data-auth-password-confirm]')?.focus();
+            return;
+          }
+          message.textContent='Account aanmaken…';
+          const { error } = await client.auth.signUp({
+            email,
+            password,
+            options:{ emailRedirectTo: SITE_URL }
+          });
+          if(error){ message.textContent='Account maken mislukt: '+error.message; return; }
+          message.textContent='Account aangemaakt. Controleer je e-mail en gebruik de nieuwste bevestigingslink.';
+        });
+        overlay.querySelector('[data-auth-resend]')?.addEventListener('click', async()=>{
+          const {email}=getCredentials();
+          if(!email){ message.textContent='Vul eerst je e-mailadres in.'; return; }
+          message.textContent='Nieuwe bevestigingsmail versturen…';
+          const { error } = await client.auth.resend({
+            type:'signup',
+            email,
+            options:{ emailRedirectTo: SITE_URL }
+          });
+          if(error){ message.textContent='Opnieuw versturen mislukt: '+error.message; return; }
+          message.textContent='Nieuwe bevestigingsmail verstuurd. Gebruik alleen de nieuwste link.';
+        });
+        return;
+      }
+
+      overlay.innerHTML = `<div class="auth-card">
+        <button class="auth-close" type="button" aria-label="Sluiten">×</button>
+        <h3>Inloggen</h3>
+        <p>Log in om portfolio-onderdelen te kunnen invullen en op de openbare website op te slaan.</p>
+        <div class="auth-fields">
+          <input type="email" data-auth-email placeholder="E-mailadres" autocomplete="email">
+          <input type="password" data-auth-password placeholder="Wachtwoord" autocomplete="current-password">
+        </div>
+        <div class="auth-actions"><button type="button" data-auth-login>Inloggen</button></div>
+        <p class="auth-switch">Nog geen account? <button type="button" class="auth-link" data-auth-show-register>Account aanmaken</button></p>
+        <p class="auth-message" data-auth-message></p>
+      </div>`;
+
+      const message = overlay.querySelector('[data-auth-message]');
+      overlay.querySelector('.auth-close')?.addEventListener('click',closeOverlay);
+      overlay.querySelector('[data-auth-show-register]')?.addEventListener('click',()=>renderAuthView('register'));
+      overlay.querySelector('[data-auth-login]')?.addEventListener('click', async()=>{
+        const email=overlay.querySelector('[data-auth-email]')?.value.trim() || '';
+        const password=overlay.querySelector('[data-auth-password]')?.value || '';
+        if(!email||!password){ message.textContent='Vul e-mailadres en wachtwoord in.'; return; }
+        message.textContent='Inloggen…';
+        const { data, error } = await client.auth.signInWithPassword({email,password});
+        if(error){
+          if(error.message?.toLowerCase().includes('email not confirmed')){
+            message.textContent='Je e-mailadres is nog niet bevestigd. Ga naar “Account aanmaken” om een nieuwe bevestigingsmail te versturen.';
+          }else{
+            message.textContent='Inloggen mislukt: '+error.message;
+          }
+          return;
         }
-        return;
-      }
-      await setCanEdit(data.session);
-      if(!canEdit){
-        message.textContent='Dit account is ingelogd, maar heeft geen beheerrechten voor dit portfolio.';
-        return;
-      }
-      message.textContent='Ingelogd.';
-      setTimeout(()=>overlay.remove(),500);
-    });
-
-    overlay.querySelector('[data-auth-signup]')?.addEventListener('click', async()=>{
-      const {email,password,passwordConfirm}=credentials();
-      if(!email||password.length<8){
-        message.textContent='Gebruik een geldig e-mailadres en een wachtwoord van minimaal 8 tekens.';
-        return;
-      }
-      if(!passwordConfirm){
-        message.textContent='Vul het wachtwoord nogmaals in ter controle.';
-        overlay.querySelector('[data-auth-password-confirm]')?.focus();
-        return;
-      }
-      if(password!==passwordConfirm){
-        message.textContent='De twee wachtwoorden komen niet overeen. Controleer ze en probeer opnieuw.';
-        overlay.querySelector('[data-auth-password-confirm]')?.focus();
-        return;
-      }
-      message.textContent='Account aanmaken…';
-      const { error } = await client.auth.signUp({
-        email,
-        password,
-        options:{ emailRedirectTo: SITE_URL }
+        await setCanEdit(data.session);
+        if(!canEdit){
+          message.textContent='Dit account is ingelogd, maar heeft geen beheerrechten voor dit portfolio.';
+          return;
+        }
+        message.textContent='Ingelogd.';
+        setTimeout(closeOverlay,500);
       });
-      if(error){ message.textContent='Account maken mislukt: '+error.message; return; }
-      message.textContent='Account aangemaakt. Controleer je e-mail en gebruik de nieuwste bevestigingslink. Daarna kom je terug op deze portfoliosite.';
-    });
+    }
 
-    overlay.querySelector('[data-auth-resend]')?.addEventListener('click', async()=>{
-      const {email}=credentials();
-      if(!email){ message.textContent='Vul eerst je e-mailadres in.'; return; }
-      message.textContent='Nieuwe bevestigingsmail versturen…';
-      const { error } = await client.auth.resend({
-        type:'signup',
-        email,
-        options:{ emailRedirectTo: SITE_URL }
-      });
-      if(error){ message.textContent='Opnieuw versturen mislukt: '+error.message; return; }
-      message.textContent='Nieuwe bevestigingsmail verstuurd. Gebruik alleen de nieuwste link; oudere links kunnen verlopen zijn.';
-    });
-
-    overlay.querySelector('[data-auth-logout]')?.addEventListener('click', async()=>{
-      await client.auth.signOut();
-      await setCanEdit(null);
-      overlay.remove();
-    });
+    overlay.addEventListener('click',e=>{ if(e.target===overlay) closeOverlay(); });
+    renderAuthView(mode);
   }
 
-  manageBtn.addEventListener('click',openAuth);
+  manageBtn.addEventListener('click',()=>openAuth('login'));
 
   saveWindow = async function(win){
     if(!win || !openWindows.has(win.key)) return;
@@ -186,7 +228,7 @@
     const session = sessionData?.session;
     if(!session){
       setStatus('Log eerst in om wijzigingen op de website op te slaan','error');
-      openAuth();
+      openAuth('login');
       return;
     }
     if(!(await userIsEditor(session))){
