@@ -13,9 +13,7 @@
     body.can-edit.admin-notes-visible .admin-section-chat{
       right:8px!important;
     }
-    .admin-chat-host{
-      --admin-chat-gap:10px!important;
-    }
+    .admin-chat-host{--admin-chat-gap:10px!important}
     .admin-chat-head strong{
       white-space:normal!important;
       overflow:visible!important;
@@ -28,21 +26,15 @@
       background:#e7f1ea!important;
       color:#35473e!important;
     }
-    .admin-ribbon-notes .admin-chat-empty{
-      color:#6f7f77!important;
-    }
+    .admin-ribbon-notes .admin-chat-empty{color:#6f7f77!important}
     .admin-ribbon-notes .admin-chat-message,
     .admin-ribbon-notes .admin-chat-message.own{
       color:#35473e!important;
       background:transparent!important;
       border-color:transparent!important;
     }
-    .admin-ribbon-notes .admin-chat-author{
-      color:#174838!important;
-    }
-    .admin-ribbon-notes .admin-chat-meta{
-      color:#7c8982!important;
-    }
+    .admin-ribbon-notes .admin-chat-author{color:#174838!important}
+    .admin-ribbon-notes .admin-chat-meta{color:#7c8982!important}
 
     @media(max-width:930px){
       body.can-edit.admin-notes-visible main{
@@ -52,22 +44,34 @@
       body.can-edit.admin-notes-visible .admin-chat-host{
         padding-right:var(--admin-host-pad)!important;
       }
-      body.can-edit.admin-notes-visible .admin-section-chat{
-        right:auto!important;
-      }
+      body.can-edit.admin-notes-visible .admin-section-chat{right:auto!important}
     }
   `;
   document.head.appendChild(style);
 
+  let scheduled=false;
   function polish(){
+    scheduled=false;
     document.querySelectorAll('.admin-chat-panel').forEach(panel=>{
       const title=panel.querySelector('.admin-chat-head strong');
-      if(title) title.textContent='Vragen / opmerkingen / notities';
+      if(title && title.textContent!=='Vragen / opmerkingen / notities'){
+        title.textContent='Vragen / opmerkingen / notities';
+      }
       const count=panel.querySelector('.admin-chat-count');
-      if(count && count.textContent.trim().toLowerCase()==='nog leeg') count.textContent='';
+      if(count && count.textContent.trim().toLowerCase()==='nog leeg'){
+        count.textContent='';
+      }
     });
   }
 
+  function schedulePolish(){
+    if(scheduled) return;
+    scheduled=true;
+    requestAnimationFrame(polish);
+  }
+
   polish();
-  new MutationObserver(()=>polish()).observe(document.body,{childList:true,subtree:true,characterData:true});
+  new MutationObserver(records=>{
+    if(records.some(record=>record.type==='childList')) schedulePolish();
+  }).observe(document.body,{childList:true,subtree:true});
 })();
