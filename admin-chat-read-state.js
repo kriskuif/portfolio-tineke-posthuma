@@ -32,6 +32,10 @@
   `;
   document.head.appendChild(style);
 
+  const setText=(el,text)=>{
+    if(el && el.textContent!==text) el.textContent=text;
+  };
+
   function canUse(){
     return document.body.classList.contains('can-edit') && !!currentUser;
   }
@@ -87,8 +91,9 @@
     const badge=ensureGlobalBadge();
     if(badge){
       badge.hidden=count===0;
-      badge.textContent=count===1?'1 nieuw bericht':`${count} nieuwe berichten`;
-      badge.setAttribute('aria-label',badge.textContent);
+      const badgeText=count===1?'1 nieuw bericht':`${count} nieuwe berichten`;
+      setText(badge,badgeText);
+      if(badge.getAttribute('aria-label')!==badgeText) badge.setAttribute('aria-label',badgeText);
     }
 
     const perTopic=unreadByTopic();
@@ -98,12 +103,14 @@
       const countEl=panel.querySelector('.admin-chat-count');
       if(!countEl) return;
       countEl.classList.toggle('has-unread',topicUnread>0);
+      let wanted='';
       if(topicUnread>0){
-        countEl.textContent=`${topicUnread} nieuw`;
+        wanted=`${topicUnread} nieuw`;
       }else{
         const total=[...messages.values()].filter(row=>row.topic_key===key).length;
-        countEl.textContent=total ? `${total} bericht${total===1?'':'en'}` : '';
+        wanted=total ? `${total} bericht${total===1?'':'en'}` : '';
       }
+      setText(countEl,wanted);
     });
   }
 
@@ -128,7 +135,7 @@
         if(meta) meta.insertAdjacentElement('afterend',receipt);
         else el.appendChild(receipt);
       }
-      receipt.textContent=`✓ Gelezen door ${joinNames(names)}`;
+      setText(receipt,`✓ Gelezen door ${joinNames(names)}`);
     });
   }
 
