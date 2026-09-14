@@ -35,7 +35,7 @@
   `;
   document.head.appendChild(style);
 
-  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const publicUrl=path=>client.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   const normalizeIds=value=>String(value||'').split(',').map(id=>id.trim().toLowerCase()).filter((id,index,all)=>FILE_ID.test(id)&&all.indexOf(id)===index);
 
@@ -109,7 +109,7 @@
       if(!ordered.length){
         const overlay=document.createElement('div');
         overlay.className='text-file-link-overlay';
-        overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Bestand niet gevonden</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">De gekoppelde bewijsstukken of bijlagen bestaan niet meer.</p></div></section>';
+        overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Bestand niet gevonden</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">De gekoppelde documenten bestaan niet meer.</p></div></section>';
         document.body.appendChild(overlay);
         overlay.querySelector('.text-file-link-close')?.addEventListener('click',()=>overlay.remove());
         return;
@@ -134,27 +134,31 @@
       if(restore) requestAnimationFrame(()=>detail?.restoreSelection?.());
     };
     if(!detail?.hasSelection){
-      overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel aan bewijsstuk/bijlage</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Selecteer eerst de tekst die je aan één of meer bewijsstukken of bijlagen wilt koppelen.</p></div></section>';
+      overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel aan document</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Selecteer eerst de tekst die je aan één of meer documenten wilt koppelen.</p></div></section>';
       document.body.appendChild(overlay);
       overlay.querySelector('.text-file-link-close')?.addEventListener('click',()=>close(false));
       return;
     }
-    overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel aan bewijsstuk/bijlage</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Bestanden laden…</p></div></section>';
+    overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel aan document</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Bestanden laden…</p></div></section>';
     document.body.appendChild(overlay);
     overlay.querySelector('.text-file-link-close')?.addEventListener('click',()=>close(true));
     try{
       const rows=await fetchFiles();
       const evidence=rows.filter(row=>row.category==='evidence');
       const attachments=rows.filter(row=>row.category==='attachment');
+      const feedback=rows.filter(row=>row.category==='feedback');
+      const lessonprep=rows.filter(row=>row.category==='lessonprep');
       const existingIds=normalizeIds((detail.existingFileIds||[]).join(','));
       const selectedSet=new Set(existingIds);
       const body=overlay.querySelector('.text-file-link-body');
       body.innerHTML=`
-        <p class="text-file-link-intro">Selecteer één of meer bestanden die je aan deze tekst wilt koppelen.</p>
+        <p class="text-file-link-intro">Selecteer één of meer documenten die je aan deze tekst wilt koppelen.</p>
         ${existingIds.length?'<p class="text-file-link-note">Bestaande koppelingen in deze selectie zijn al aangevinkt. Als maar een deel van de geselecteerde tekst al gekoppeld was, geldt je keuze na Opslaan voor de hele geselecteerde tekst.</p>':''}
         <p class="text-file-link-selection"><strong>Geselecteerde tekst:</strong> ${esc(detail.selectedText||'')}</p>
         ${renderGroup('Bewijsstukken',evidence,selectedSet)}
         ${renderGroup('Bijlagen',attachments,selectedSet)}
+        ${renderGroup('Feedback',feedback,selectedSet)}
+        ${renderGroup('Lesvoorbereidingen',lessonprep,selectedSet)}
         <div class="text-file-link-actions">
           <button class="text-file-link-btn secondary" type="button" data-link-cancel>Annuleren</button>
           <button class="text-file-link-btn" type="button" data-link-apply>Koppelen</button>
@@ -189,7 +193,7 @@
     }catch(err){
       console.error('Bestanden voor tekstkoppeling laden mislukt:',err);
       const body=overlay.querySelector('.text-file-link-body');
-      if(body) body.innerHTML='<p class="text-file-link-intro">De bewijsstukken en bijlagen konden niet worden geladen.</p>';
+      if(body) body.innerHTML='<p class="text-file-link-intro">De documenten konden niet worden geladen.</p>';
     }
   }
 
