@@ -23,7 +23,7 @@
     .file-upload-dialog{width:min(500px,calc(100vw - 30px));background:#fff;border-radius:19px;border:1px solid #dce4df;box-shadow:0 28px 90px rgba(13,35,27,.35);overflow:hidden}
     .file-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px 17px;background:linear-gradient(135deg,#1d5745,#286b55);color:#fff}
     .file-dialog-head strong{font-family:Georgia,serif;font-size:1.08rem}
-    .file-dialog-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:1.25rem;cursor:pointer}
+    .file-dialog-close,.file-viewer-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:1.25rem;cursor:pointer}
     .file-upload-body{padding:18px;display:grid;gap:13px}
     .file-upload-body label{display:grid;gap:6px;font-size:.79rem;font-weight:850;color:#405047}
     .file-upload-body input[type="text"],.file-upload-body input[type="file"]{width:100%;border:1px solid #ced9d2;border-radius:11px;background:#fff;padding:10px 11px;font:inherit}
@@ -35,11 +35,10 @@
     .file-viewer-card{position:relative;width:min(92vw,880px);height:calc(100vh - 56px);max-height:1120px;display:flex;flex-direction:column;background:#f4f5f2;border-radius:20px;box-shadow:0 30px 100px rgba(5,24,17,.5);overflow:hidden}
     .file-viewer-head{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:54px;padding:10px 14px 10px 18px;background:#1f5e4a;color:#fff}
     .file-viewer-head strong{font-family:Georgia,serif;font-size:1.08rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .file-viewer-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:1.25rem;cursor:pointer;flex:0 0 auto}
     .file-viewer-stage{flex:1;min-height:0;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:16px;background:#dfe3df}
     .file-paper{width:min(100%,740px);min-height:100%;aspect-ratio:210/297;background:#fff;box-shadow:0 5px 24px rgba(24,39,32,.18);overflow:auto;position:relative}
     .file-paper iframe{display:block;width:100%;height:100%;min-height:100%;border:0;background:#fff}
-    .file-paper img{display:block;width:100%;height:auto;min-height:auto;background:#fff}
+    .file-paper img{display:block;width:100%;height:auto;background:#fff}
     .file-fallback{display:grid;place-items:center;min-height:100%;padding:30px;text-align:center;color:#536159}
     .file-fallback a{color:#1f5e4a;font-weight:850}
     .file-nav-arrow{position:fixed;top:50%;transform:translateY(-50%);z-index:3910;width:48px;height:62px;border:1px solid rgba(255,255,255,.28);border-radius:14px;background:rgba(22,64,49,.88);color:#fff;font-size:2rem;line-height:1;cursor:pointer;display:grid;place-items:center;box-shadow:0 8px 28px rgba(0,0,0,.2)}
@@ -49,10 +48,9 @@
   `;
   document.head.appendChild(style);
 
-  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeName=name=>String(name||'bestand').replace(/[^a-z0-9._-]+/gi,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(-120)||'bestand';
-
-  function publicUrl(path){ return client.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
+  const publicUrl=path=>client.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 
   async function loadFiles(){
     if(loading) return;
@@ -67,12 +65,16 @@
     finally{loading=false}
   }
 
+  function signature(category){return files[category].map(x=>`${x.id}:${x.title}`).join('|')||'empty'}
+
   function renderCategory(category){
     const cfg=sections[category];
     const card=document.querySelector(`[data-topic-card="${cfg.cardKey}"]`);
     if(!card) return;
+    const sig=signature(category);
     const content=card.querySelector('.topic-content');
-    if(content){
+    if(content && content.dataset.fileSignature!==sig){
+      content.dataset.fileSignature=sig;
       content.innerHTML=files[category].length
         ? `<div class="portfolio-file-list">${files[category].map((item,index)=>`<button type="button" class="portfolio-file-link" data-view-file="${category}" data-file-index="${index}">${esc(item.title)}</button>`).join('')}</div>`
         : `<p class="portfolio-file-empty">${cfg.empty}</p>`;
@@ -88,9 +90,7 @@
     }
   }
 
-  function renderFileSections(){
-    renderCategory('evidence');
-    renderCategory('attachment');
+  function bindViewButtons(){
     document.querySelectorAll('[data-view-file]').forEach(btn=>{
       if(btn.dataset.viewerBound) return;
       btn.dataset.viewerBound='1';
@@ -98,19 +98,18 @@
     });
   }
 
-  async function openUpload(category){
+  function renderFileSections(){
+    renderCategory('evidence');
+    renderCategory('attachment');
+    bindViewButtons();
+  }
+
+  function openUpload(category){
     if(!document.body.classList.contains('can-edit')) return;
     const cfg=sections[category];
     const overlay=document.createElement('div');
     overlay.className='file-upload-overlay';
-    overlay.innerHTML=`<section class="file-upload-dialog" role="dialog" aria-modal="true" aria-label="${cfg.label} uploaden">
-      <header class="file-dialog-head"><strong>${cfg.label.slice(0,-1)} uploaden</strong><button class="file-dialog-close" type="button" aria-label="Sluiten">×</button></header>
-      <div class="file-upload-body">
-        <label>Titel<input type="text" maxlength="200" data-file-title placeholder="Geef het bestand een duidelijke titel"></label>
-        <label>Bestand<input type="file" data-file-input></label>
-        <p class="file-upload-message" data-file-message></p>
-        <div class="file-upload-actions"><button class="file-upload-btn secondary" type="button" data-file-cancel>Annuleren</button><button class="file-upload-btn" type="button" data-file-save>Uploaden</button></div>
-      </div></section>`;
+    overlay.innerHTML=`<section class="file-upload-dialog" role="dialog" aria-modal="true" aria-label="${cfg.label} uploaden"><header class="file-dialog-head"><strong>${category==='evidence'?'Bewijsstuk':'Bijlage'} uploaden</strong><button class="file-dialog-close" type="button" aria-label="Sluiten">×</button></header><div class="file-upload-body"><label>Titel<input type="text" maxlength="200" data-file-title placeholder="Geef het bestand een duidelijke titel"></label><label>Bestand<input type="file" data-file-input></label><p class="file-upload-message" data-file-message></p><div class="file-upload-actions"><button class="file-upload-btn secondary" type="button" data-file-cancel>Annuleren</button><button class="file-upload-btn" type="button" data-file-save>Uploaden</button></div></div></section>`;
     document.body.appendChild(overlay);
     const close=()=>overlay.remove();
     overlay.querySelector('.file-dialog-close')?.addEventListener('click',close);
@@ -146,9 +145,9 @@
     const url=publicUrl(item.storage_path);
     const mime=String(item.mime_type||'').toLowerCase();
     const ext=String(item.file_name||'').split('.').pop().toLowerCase();
-    if(mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return `<img src="${esc(url)}" alt="${esc(item.title)}">`;
-    if(mime==='application/pdf' || ext==='pdf') return `<iframe src="${esc(url)}#view=FitH" title="${esc(item.title)}"></iframe>`;
-    if(mime.startsWith('text/') || ['txt','html','htm'].includes(ext)) return `<iframe src="${esc(url)}" title="${esc(item.title)}"></iframe>`;
+    if(mime.startsWith('image/')||['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return `<img src="${esc(url)}" alt="${esc(item.title)}">`;
+    if(mime==='application/pdf'||ext==='pdf') return `<iframe src="${esc(url)}#view=FitH" title="${esc(item.title)}"></iframe>`;
+    if(mime.startsWith('text/')||['txt','html','htm'].includes(ext)) return `<iframe src="${esc(url)}" title="${esc(item.title)}"></iframe>`;
     return `<div class="file-fallback"><div><p>Dit bestandstype kan de browser niet altijd rechtstreeks in het venster weergeven.</p><p><a href="${esc(url)}" target="_blank" rel="noopener">Bestand openen</a></p></div></div>`;
   }
 
@@ -178,8 +177,16 @@
     render();
   }
 
-  const observer=new MutationObserver(()=>renderFileSections());
-  observer.observe(document.body,{childList:true,subtree:true});
+  let scheduled=false;
+  const scheduleRender=()=>{
+    if(scheduled) return;
+    scheduled=true;
+    requestAnimationFrame(()=>{scheduled=false;renderFileSections()});
+  };
+  new MutationObserver(records=>{
+    if(records.some(r=>[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches?.('[data-topic-card="5-2"],[data-topic-card="5-3"]')||n.querySelector?.('[data-topic-card="5-2"],[data-topic-card="5-3"]'))))) scheduleRender();
+  }).observe(document.body,{childList:true,subtree:true});
+
   loadFiles();
   window.portfolioFiles={reload:loadFiles};
 })();
