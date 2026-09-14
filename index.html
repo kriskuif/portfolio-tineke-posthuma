@@ -51,13 +51,55 @@
 </div>
 <div class="window-layer" id="windowLayer" hidden aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+  const PROJECT_REF='yvxiuslhypwbjkpmtfwy';
+  const supabaseGlobal=window.supabase;
+  if(!supabaseGlobal?.createClient) return;
+
+  // Verwijder alleen de oude gedeelde Supabase-authsessie. Portfolio-inhoud en
+  // andere localStorage-gegevens blijven ongemoeid.
+  const legacyPrefix=`sb-${PROJECT_REF}-auth-token`;
+  try{
+    for(let i=localStorage.length-1;i>=0;i--){
+      const key=localStorage.key(i);
+      if(key && (key===legacyPrefix || key.startsWith(`${legacyPrefix}-`))) localStorage.removeItem(key);
+    }
+  }catch(_err){}
+
+  const tabIdKey='portfolio-auth-tab-id-v1';
+  let tabId='';
+  try{ tabId=sessionStorage.getItem(tabIdKey)||''; }catch(_err){}
+  if(!tabId){
+    tabId=(globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    try{ sessionStorage.setItem(tabIdKey,tabId); }catch(_err){}
+  }
+
+  const storageKey=`portfolio-auth-${PROJECT_REF}-${tabId}`;
+  const tabStorage={
+    getItem(key){ try{return sessionStorage.getItem(key);}catch(_err){return null;} },
+    setItem(key,value){ try{sessionStorage.setItem(key,value);}catch(_err){} },
+    removeItem(key){ try{sessionStorage.removeItem(key);}catch(_err){} }
+  };
+  const originalCreateClient=supabaseGlobal.createClient.bind(supabaseGlobal);
+  supabaseGlobal.createClient=(url,key,options={})=>originalCreateClient(url,key,{
+    ...options,
+    auth:{
+      ...(options.auth||{}),
+      storage:tabStorage,
+      storageKey,
+      persistSession:true
+    }
+  });
+})();
+</script>
 <script src="password-recovery.js?v=20260914-1331"></script>
 <script src="script.js?v=20260914-1331"></script>
 <script src="supabase-sync.js?v=20260914-1331"></script>
 <script src="settings.js?v=20260914-1331"></script>
 <script src="admin-account.js?v=20260914-1331"></script>
 <script src="profile-photo.js?v=20260914-1331"></script>
-<script src="export-admin-privacy.js?v=20260914-1638"></script>
+<script src="export-admin-privacy.js?v=20260914-1935"></script>
 <script src="export-fix.js?v=20260914-1331"></script>
 <script src="password-toggle.js?v=20260914-1331"></script>
 <script src="rich-text.js?v=20260914-1450"></script>
@@ -69,6 +111,6 @@
 <script src="file-row-layout-fix.js?v=20260914-1525"></script>
 <script src="popup-behavior.js?v=20260914-1400"></script>
 <script src="portfolio-text-file-links.js?v=20260914-1540"></script>
-<script src="admin-notes-v2.js?v=20260914-1925"></script>
+<script src="admin-notes-v2.js?v=20260914-1935"></script>
 </body>
 </html>
