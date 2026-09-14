@@ -21,11 +21,20 @@
     .saved-field p span[style*="color"],.rich-editor span[style*="color"]{text-decoration-color:currentColor}
     .rich-editor a[data-portfolio-file-id],.rich-editor a[data-portfolio-file-ids],.saved-field p a[data-portfolio-file-id],.saved-field p a[data-portfolio-file-ids]{color:#1f5e4a;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;font-weight:750;cursor:pointer}
     .rich-editor a[data-portfolio-file-id]:hover,.rich-editor a[data-portfolio-file-ids]:hover,.saved-field p a[data-portfolio-file-id]:hover,.saved-field p a[data-portfolio-file-ids]:hover{color:#174838;text-decoration-thickness:2px}
+    ::highlight(portfolio-link-selection){background:rgba(209,225,214,.95);color:inherit;text-decoration:underline;text-decoration-color:#1f5e4a;text-decoration-thickness:2px;text-underline-offset:3px}
   `;
   document.head.appendChild(style);
 
   function validIds(value){
     return String(value||'').split(',').map(id=>id.trim().toLowerCase()).filter((id,index,all)=>FILE_ID.test(id)&&all.indexOf(id)===index);
+  }
+
+  function anchorIds(anchor){
+    if(!anchor) return [];
+    const multiple=validIds(anchor.getAttribute('data-portfolio-file-ids')||'');
+    if(multiple.length) return multiple;
+    const single=String(anchor.getAttribute('data-portfolio-file-id')||'').trim().toLowerCase();
+    return FILE_ID.test(single)?[single]:[];
   }
 
   function sanitize(html){
@@ -100,6 +109,7 @@
     textarea.parentNode.insertBefore(wrap,textarea);
     wrap.append(toolbar,editor,textarea);
     let savedRange=null;
+
     const rememberSelection=()=>{
       const sel=window.getSelection();
       if(sel?.rangeCount && editor.contains(sel.anchorNode) && editor.contains(sel.focusNode)) savedRange=sel.getRangeAt(0).cloneRange();
@@ -115,9 +125,49 @@
       textarea.dispatchEvent(new Event('input',{bubbles:true}));
       rememberSelection();
     };
+    const existingIdsForRange=range=>{
+      if(!range || range.collapsed) return [];
+      const ids=[];
+      editor.querySelectorAll('a[data-portfolio-file-id],a[data-portfolio-file-ids]').forEach(anchor=>{
+        let intersects=false;
+        try{intersects=range.intersectsNode(anchor)}catch(_err){}
+        if(intersects) anchorIds(anchor).forEach(id=>{if(!ids.includes(id))ids.push(id)});
+      });
+      return ids;
+    };
+    const showSelectionPreview=()=>{
+      if(!savedRange || savedRange.collapsed) return;
+      restoreSelection();
+      try{
+        if(window.Highlight && window.CSS?.highlights){
+          window.CSS.highlights.set('portfolio-link-selection',new Highlight(savedRange.cloneRange()));
+        }
+      }catch(_err){}
+    };
+    const clearSelectionPreview=()=>{
+      try{window.CSS?.highlights?.delete('portfolio-link-selection')}catch(_err){}
+    };
+    const removeNestedLinks=fragment=>{
+      fragment.querySelectorAll?.('a').forEach(anchor=>anchor.replaceWith(...anchor.childNodes));
+    };
     const applyFileLinks=items=>{
+      if(!savedRange || savedRange.collapsed || !editor.contains(savedRange.commonAncestorContainer)) return false;
       const cleanItems=(items||[]).filter(item=>FILE_ID.test(String(item?.id||''))).filter((item,index,all)=>all.findIndex(x=>String(x.id).toLowerCase()===String(item.id).toLowerCase())===index);
-      if(!cleanItems.length || !savedRange || savedRange.collapsed || !editor.contains(savedRange.commonAncestorContainer)) return false;
+      clearSelectionPreview();
+      editor.focus();
+      restoreSelection();
+
+      // Unlink only the selected portion first. Browsers split an existing anchor at the
+      // selection boundaries, so text outside the selection keeps its previous link.
+      try{document.execCommand('unlink',false,null)}catch(_err){}
+      rememberSelection();
+      if(!savedRange || savedRange.collapsed) return false;
+
+      if(!cleanItems.length){
+        sync();
+        return true;
+      }
+
       const range=savedRange.cloneRange();
       const link=document.createElement('a');
       const ids=cleanItems.map(item=>String(item.id).toLowerCase());
@@ -128,6 +178,7 @@
       try{
         const fragment=range.extractContents();
         if(!fragment.textContent?.trim()) return false;
+        removeNestedLinks(fragment);
         link.appendChild(fragment);
         range.insertNode(link);
       }catch(_err){ return false; }
@@ -159,11 +210,17 @@
     fileButton?.addEventListener('mousedown',e=>{e.preventDefault();rememberSelection()});
     fileButton?.addEventListener('click',()=>{
       rememberSelection();
+      const hasSelection=!!savedRange && !savedRange.collapsed;
+      const existingFileIds=hasSelection?existingIdsForRange(savedRange):[];
+      if(hasSelection) showSelectionPreview();
       document.dispatchEvent(new CustomEvent('portfolio:link-file-request',{detail:{
-        hasSelection:!!savedRange && !savedRange.collapsed,
-        selectedText:savedRange && !savedRange.collapsed ? savedRange.toString() : '',
+        hasSelection,
+        selectedText:hasSelection?savedRange.toString():'',
+        existingFileIds,
         applyFileLink,
-        applyFileLinks
+        applyFileLinks,
+        restoreSelection,
+        clearSelectionPreview
       }}));
     });
     const color=toolbar.querySelector('.rich-color');
