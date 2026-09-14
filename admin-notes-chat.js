@@ -99,6 +99,7 @@
       input.addEventListener('change',()=>{
         visible=input.checked;
         localStorage.setItem(VISIBILITY_KEY,visible?'1':'0');
+        if(visible) scheduleEnhance();
         syncVisibility();
         if(visible) loadMessages(true);
       });
@@ -112,10 +113,7 @@
   function syncVisibility(){
     const show=document.body.classList.contains('can-edit') && visible;
     document.body.classList.toggle('admin-notes-visible',show);
-    if(show){
-      scheduleEnhance();
-      document.querySelectorAll('.admin-chat-panel').forEach(panel=>renderPanel(panel));
-    }
+    if(show) document.querySelectorAll('.admin-chat-panel').forEach(panel=>renderPanel(panel));
   }
 
   function renderPanel(panel){
@@ -126,9 +124,12 @@
     if(count) count.textContent=list.length ? `${list.length} bericht${list.length===1?'':'en'}` : 'Nog leeg';
     if(!messages) return;
     if(!list.length){
-      messages.innerHTML='<p class="admin-chat-empty">Nog geen beheerdernotities voor dit onderdeel.</p>';
+      if(!messages.querySelector('.admin-chat-empty')) messages.innerHTML='<p class="admin-chat-empty">Nog geen beheerdernotities voor dit onderdeel.</p>';
       return;
     }
+    const signature=list.map(row=>row.id).join('|');
+    if(messages.dataset.messageSignature===signature) return;
+    messages.dataset.messageSignature=signature;
     messages.innerHTML=list.map(row=>{
       const own=currentUser && row.created_by===currentUser.id;
       return `<article class="admin-chat-message${own?' own':''}" data-admin-message-id="${esc(row.id)}">
@@ -145,6 +146,7 @@
       if(error){button.disabled=false;console.error('Beheerbericht verwijderen mislukt:',error);return;}
       const next=(messagesByTopic.get(key)||[]).filter(row=>row.id!==id);
       messagesByTopic.set(key,next);
+      messages.dataset.messageSignature='';
       renderPanel(panel);
     }));
     requestAnimationFrame(()=>{messages.scrollTop=messages.scrollHeight});
@@ -163,12 +165,7 @@
     currentUser=session.user;
     if(send) send.disabled=true;
     if(errorEl) errorEl.textContent='';
-    const payload={
-      topic_key:panel.dataset.topicKey,
-      message,
-      created_by:session.user.id,
-      author_email:session.user.email||''
-    };
+    const payload={topic_key:panel.dataset.topicKey,message,created_by:session.user.id,author_email:session.user.email||''};
     const {data,error}=await client.from('portfolio_admin_messages').insert(payload).select('id,topic_key,message,created_at,created_by,author_email').single();
     if(send) send.disabled=false;
     if(error){if(errorEl) errorEl.textContent='Bericht opslaan is mislukt.';console.error(error);return;}
@@ -177,6 +174,8 @@
     if(!list.some(row=>row.id===data.id)) list.push(data);
     list.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
     messagesByTopic.set(data.topic_key,list);
+    const messages=panel.querySelector('.admin-chat-messages');
+    if(messages) messages.dataset.messageSignature='';
     renderPanel(panel);
   }
 
@@ -200,13 +199,12 @@
         card.appendChild(panel);
         panel.querySelector('[data-admin-chat-send]')?.addEventListener('click',()=>sendMessage(panel));
         panel.querySelector('[data-admin-chat-input]')?.addEventListener('keydown',event=>{
-          if(event.key==='Enter'&&!event.shiftKey){
-            event.preventDefault();
-            sendMessage(panel);
-          }
+          if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage(panel);}
         });
       }else if(panel.dataset.topicKey!==key){
         panel.dataset.topicKey=key;
+        const messages=panel.querySelector('.admin-chat-messages');
+        if(messages) messages.dataset.messageSignature='';
       }
       renderPanel(panel);
     });
@@ -241,6 +239,7 @@
       next.set(row.topic_key,list);
     });
     messagesByTopic=next;
+    document.querySelectorAll('.admin-chat-messages').forEach(el=>{el.dataset.messageSignature=''});
     document.querySelectorAll('.admin-chat-panel').forEach(panel=>renderPanel(panel));
     subscribeRealtime();
   }
@@ -268,10 +267,28 @@
     }
   }
 
+  function childMutationNeedsEnhance(record){
+    if(record.type!=='childList') return false;
+    if(record.target?.nodeType===1 && record.target.closest?.('.topbar')) return true;
+    return [...record.addedNodes].some(node=>node.nodeType===1 && (
+      node.matches?.('.topic-card,.topic-list') || node.querySelector?.('.topic-card')
+    ));
+  }
+
   new MutationObserver(records=>{
     if(records.some(record=>record.type==='attributes'&&record.target===document.body)) syncAuthState();
-    if(records.some(record=>record.type==='childList')) scheduleEnhance();
+    if(records.some(childMutationNeedsEnhance)) scheduleEnhance();
   }).observe(document.body,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+
+  window.addEventListener('click',event=>{
+    const exportButton=event.target.closest?.('[data-export-html],[data-export-word],[data-export-pdf]');
+    if(!exportButton) return;
+    const toggle=document.querySelector('.admin-notes-toggle');
+    if(!toggle) return;
+    const wasHidden=toggle.hidden;
+    toggle.hidden=true;
+    setTimeout(()=>{if(toggle.isConnected) toggle.hidden=wasHidden;},0);
+  },true);
 
   client.auth.onAuthStateChange(()=>setTimeout(syncAuthState,0));
   syncAuthState();
