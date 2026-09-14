@@ -6,9 +6,14 @@
 
   const style=document.createElement('style');
   style.textContent=`
-    .portfolio-file-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:stretch}
-    .portfolio-file-edit{width:42px;border:1px solid #dce5df;border-radius:11px;background:#f7faf8;color:#24513f;cursor:pointer;font-size:1rem;display:grid;place-items:center}
-    .portfolio-file-edit:hover,.portfolio-file-edit:focus-visible{background:#e8f0eb;border-color:#b9cbbf;outline:none}
+    .portfolio-file-row{position:relative;display:block}
+    body.can-edit .portfolio-file-link{padding-right:52px}
+    .portfolio-file-row:hover .portfolio-file-link,
+    .portfolio-file-row:focus-within .portfolio-file-link{background:#f0f5f1;border-color:#b9cbbf}
+    .portfolio-file-edit{position:absolute;right:6px;top:50%;transform:translateY(-50%) translateX(4px);width:34px;height:34px;border:1px solid #c8d8ce;border-radius:9px;background:#fff;color:#24513f;cursor:pointer;font-size:.95rem;display:grid;place-items:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .14s ease,transform .14s ease,background .14s ease,border-color .14s ease}
+    body.can-edit .portfolio-file-row:hover .portfolio-file-edit,
+    body.can-edit .portfolio-file-row:focus-within .portfolio-file-edit{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(-50%) translateX(0)}
+    .portfolio-file-edit:hover,.portfolio-file-edit:focus-visible{background:#e2ede6;border-color:#9fb8a8;outline:none}
     body:not(.can-edit) .portfolio-file-edit{display:none!important}
     .file-title-overlay{position:fixed;inset:0;z-index:3950;background:rgba(16,31,25,.58);display:grid;place-items:center;padding:24px}
     .file-title-dialog{width:min(480px,calc(100vw - 30px));background:#fff;border:1px solid #dce4df;border-radius:19px;box-shadow:0 28px 90px rgba(13,35,27,.35);overflow:hidden}
