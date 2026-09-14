@@ -12,9 +12,9 @@
     body.can-edit .portfolio-file-link{padding-right:52px}
     .portfolio-file-row:hover .portfolio-file-link,
     .portfolio-file-row:focus-within .portfolio-file-link{background:#f0f5f1;border-color:#b9cbbf}
-    .portfolio-file-edit{position:absolute;right:6px;top:50%;transform:translateY(-50%) translateX(4px);width:34px;height:34px;border:1px solid #c8d8ce;border-radius:9px;background:#fff;color:#24513f;cursor:pointer;font-size:.95rem;display:grid;place-items:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .14s ease,transform .14s ease,background .14s ease,border-color .14s ease}
+    .portfolio-file-edit{position:absolute;right:6px;top:0;bottom:0;margin-block:auto;transform:translateX(4px);width:34px;height:34px;padding:0;border:1px solid #c8d8ce;border-radius:9px;background:#fff;color:#24513f;cursor:pointer;font-size:.95rem;line-height:1;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .14s ease,transform .14s ease,background .14s ease,border-color .14s ease}
     body.can-edit .portfolio-file-row:hover .portfolio-file-edit,
-    body.can-edit .portfolio-file-row:focus-within .portfolio-file-edit{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(-50%) translateX(0)}
+    body.can-edit .portfolio-file-row:focus-within .portfolio-file-edit{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0)}
     .portfolio-file-edit:hover,.portfolio-file-edit:focus-visible{background:#e2ede6;border-color:#9fb8a8;outline:none}
     body:not(.can-edit) .portfolio-file-edit{display:none!important}
     .file-title-overlay,.file-delete-confirm-overlay{position:fixed;inset:0;z-index:3950;background:rgba(16,31,25,.58);display:grid;place-items:center;padding:24px}
