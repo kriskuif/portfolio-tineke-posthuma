@@ -4,6 +4,8 @@
   const SUPABASE_URL='https://yvxiuslhypwbjkpmtfwy.supabase.co';
   const SUPABASE_KEY='sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
   const DWELL_MS=3000;
+  const VISIBILITY_KEY='portfolio-admin-notes-visible-v2';
+  const LOGIN_MARKER_KEY='portfolio-admin-notes-login-user-v1';
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
 
@@ -34,6 +36,36 @@
 
   function currentEmail(){
     return String(session?.user?.email||'').trim().toLowerCase();
+  }
+
+  function forceNotesOff(attempt=0){
+    try{localStorage.setItem(VISIBILITY_KEY,'0');}catch(_err){}
+    document.body.classList.remove('admin-notes-visible');
+    const input=document.querySelector('[data-admin-notes-toggle]');
+    if(input){
+      if(input.checked){
+        input.checked=false;
+        input.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      return;
+    }
+    if(attempt<24) setTimeout(()=>forceNotesOff(attempt+1),50);
+  }
+
+  function handleAuthStateChange(event,newSession){
+    const uid=String(newSession?.user?.id||'');
+    if(event==='SIGNED_OUT'){
+      try{sessionStorage.removeItem(LOGIN_MARKER_KEY);}catch(_err){}
+      forceNotesOff();
+    }else if(event==='SIGNED_IN'&&uid){
+      let previous='';
+      try{previous=sessionStorage.getItem(LOGIN_MARKER_KEY)||'';}catch(_err){}
+      if(previous!==uid){
+        try{sessionStorage.setItem(LOGIN_MARKER_KEY,uid);}catch(_err){}
+        forceNotesOff();
+      }
+    }
+    setTimeout(refreshIdentity,0);
   }
 
   function elementVisible(el){
@@ -164,7 +196,7 @@
     else resetSeen();
   });
 
-  client.auth.onAuthStateChange(()=>setTimeout(refreshIdentity,0));
+  client.auth.onAuthStateChange(handleAuthStateChange);
   refreshIdentity();
 
   channel=client.channel('portfolio-admin-read-enhancements')
