@@ -1,5 +1,5 @@
 (() => {
-  const ALLOWED = new Set(['B','STRONG','I','EM','U','SPAN','BR','DIV','P']);
+  const ALLOWED = new Set(['B','STRONG','I','EM','U','SPAN','BR','DIV','P','UL','OL','LI']);
   const HEX = /^#[0-9a-f]{6}$/i;
 
   const style = document.createElement('style');
@@ -14,6 +14,8 @@
     .rich-editor{min-height:125px;max-height:310px;overflow:auto;padding:11px 12px;border:1px solid #cbd8d0;border-radius:0 0 12px 12px;background:#fff;color:#26352e;font:inherit;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
     .rich-editor:focus{outline:2px solid rgba(31,94,74,.18);border-color:#6e9985}
     .rich-editor:empty:before{content:'Typ hier je tekst…';color:#9aa69f;pointer-events:none}
+    .rich-editor ul,.rich-editor ol,.saved-field p ul,.saved-field p ol{margin:.35em 0 .35em 1.45em;padding-left:.7em;white-space:normal}
+    .rich-editor li,.saved-field p li{margin:.15em 0}
     .saved-field p span[style*="color"],.rich-editor span[style*="color"]{text-decoration-color:currentColor}
   `;
   document.head.appendChild(style);
@@ -21,6 +23,7 @@
   function sanitize(html){
     const doc = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html');
     const root = doc.body.firstElementChild;
+    const original = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html').body.firstElementChild;
     const clean = node => {
       [...node.childNodes].forEach(child => {
         if(child.nodeType === Node.TEXT_NODE) return;
@@ -30,42 +33,18 @@
           return;
         }
         [...child.attributes].forEach(attr => child.removeAttribute(attr.name));
-        if(child.tagName === 'SPAN'){
-          const source = child.getAttribute('style') || '';
-          const match = source.match(/color\s*:\s*(#[0-9a-f]{6})/i);
-          if(match && HEX.test(match[1])) child.setAttribute('style', `color:${match[1].toLowerCase()}`);
-        }
         clean(child);
       });
     };
-    // Reparse styles before stripping attributes so color survives.
-    const original = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html').body.firstElementChild;
-    const sanitizeNode = (src, dst) => {
-      const srcChildren=[...src.childNodes], dstChildren=[...dst.childNodes];
-      dstChildren.forEach((child,i)=>{
-        const srcChild=srcChildren[i];
-        if(child?.nodeType===Node.ELEMENT_NODE && srcChild?.nodeType===Node.ELEMENT_NODE){
-          const sourceStyle=srcChild.getAttribute('style') || '';
-          [...child.attributes].forEach(attr=>child.removeAttribute(attr.name));
-          if(child.tagName==='SPAN'){
-            const m=sourceStyle.match(/color\s*:\s*(#[0-9a-f]{6})/i);
-            if(m && HEX.test(m[1])) child.setAttribute('style',`color:${m[1].toLowerCase()}`);
-          }
-          sanitizeNode(srcChild,child);
-        }
-      });
-    };
     clean(root);
-    // clean() has already removed unsafe markup; normalize legacy tags.
     root.querySelectorAll('b').forEach(el=>{const n=doc.createElement('strong');n.innerHTML=el.innerHTML;el.replaceWith(n)});
     root.querySelectorAll('i').forEach(el=>{const n=doc.createElement('em');n.innerHTML=el.innerHTML;el.replaceWith(n)});
-    // Restore only safe hex colors from the submitted markup by walking equivalent spans where possible.
     const srcSpans=[...original.querySelectorAll('span')], dstSpans=[...root.querySelectorAll('span')];
     dstSpans.forEach((span,i)=>{const m=(srcSpans[i]?.getAttribute('style')||'').match(/color\s*:\s*(#[0-9a-f]{6})/i);if(m&&HEX.test(m[1]))span.setAttribute('style',`color:${m[1].toLowerCase()}`)});
     return root.innerHTML;
   }
 
-  function isRich(value){ return /<(?:strong|b|em|i|u|span|br|div|p)(?:\s|>|\/)/i.test(String(value||'')); }
+  function isRich(value){ return /<(?:strong|b|em|i|u|span|br|div|p|ul|ol|li)(?:\s|>|\/)/i.test(String(value||'')); }
 
   function enhanceTextarea(textarea){
     if(!textarea || textarea.dataset.richEnhanced) return;
@@ -82,6 +61,8 @@
       <button class="rich-tool" type="button" data-rich-command="bold" title="Vet" aria-label="Vet"><strong>B</strong></button>
       <button class="rich-tool" type="button" data-rich-command="italic" title="Cursief" aria-label="Cursief"><em>I</em></button>
       <button class="rich-tool" type="button" data-rich-command="underline" title="Onderstrepen" aria-label="Onderstrepen"><u>U</u></button>
+      <button class="rich-tool" type="button" data-rich-command="insertUnorderedList" title="Opsomming" aria-label="Opsomming">• ≡</button>
+      <button class="rich-tool" type="button" data-rich-command="insertOrderedList" title="Genummerde opsomming" aria-label="Genummerde opsomming">1. ≡</button>
       <label class="rich-color-label" title="Tekstkleur">Kleur <input class="rich-color" type="color" value="#1f5e4a" aria-label="Tekstkleur"></label>`;
     const editor=document.createElement('div');
     editor.className='rich-editor';
@@ -121,7 +102,6 @@
   enhanceEditors();
   new MutationObserver(records=>records.forEach(r=>r.addedNodes.forEach(n=>{if(n.nodeType===1)enhanceEditors(n)}))).observe(document.body,{childList:true,subtree:true});
 
-  // Render stored safe formatting on the public portfolio instead of showing HTML tags.
   const originalRender=window.renderChapters || (typeof renderChapters==='function' ? renderChapters : null);
   if(originalRender){
     const richRender=function(){
