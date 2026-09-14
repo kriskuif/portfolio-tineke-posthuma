@@ -3,6 +3,9 @@
     const trigger=event.target.closest?.('[data-export-html],[data-export-word],[data-export-pdf]');
     if(!trigger) return;
 
+    const hadAdminMode=document.body.classList.contains('admin-notes-visible');
+    if(hadAdminMode) document.body.classList.remove('admin-notes-visible');
+
     const records=[];
     document.querySelectorAll('.admin-chat-panel,.admin-notes-toggle').forEach(node=>{
       const marker=document.createComment('beheerinhoud niet exporteren');
@@ -25,6 +28,7 @@
         }
         marker.replaceWith(node);
       });
+      if(hadAdminMode) document.body.classList.add('admin-notes-visible');
     },0);
   },true);
 })();
