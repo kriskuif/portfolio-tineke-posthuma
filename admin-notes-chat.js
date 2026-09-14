@@ -5,9 +5,23 @@
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
 
+  const TARGETS=[
+    {selector:'#start',key:'admin:start',label:'Start'},
+    {selector:'#over',key:'admin:over',label:'Over dit portfolio'},
+    {selector:'#overzicht',key:'admin:overview',label:'Portfolio-overzicht'},
+    {selector:'#hoofdstuk-1',key:'admin:chapter:1',label:'Profiel & leerdoelen'},
+    {selector:'#hoofdstuk-2',key:'admin:chapter:2',label:'Doelgroep & doelen'},
+    {selector:'#hoofdstuk-3',key:'admin:chapter:3',label:'Planning & voorbereiding'},
+    {selector:'#hoofdstuk-4',key:'admin:chapter:4',label:'Uitvoering & bewijs'},
+    {selector:'#hoofdstuk-5',key:'admin:chapter:5',label:'Evaluatie & feedback'},
+    {selector:'#hoofdstuk-6',key:'admin:chapter:6',label:'Ontwikkeling & reflectie'}
+  ];
+  const RIBBON={key:'admin:ribbon',label:'Lintnotities'};
+  const allowedKeys=[...TARGETS.map(item=>item.key),RIBBON.key];
+
   let visible=localStorage.getItem(VISIBILITY_KEY)==='1';
   let currentUser=null;
-  let messagesByTopic=new Map();
+  let messagesByKey=new Map();
   let realtimeChannel=null;
   let loadTimer=null;
   let enhanceScheduled=false;
@@ -17,56 +31,66 @@
     .admin-notes-toggle{margin-left:auto;display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #d6e0da;border-radius:10px;background:#fff;color:#315546;font-size:.78rem;font-weight:800;white-space:nowrap;cursor:pointer;user-select:none}
     .admin-notes-toggle input{width:16px;height:16px;margin:0;accent-color:#1f5e4a;cursor:pointer}
     body:not(.can-edit) .admin-notes-toggle{display:none!important}
-    .admin-chat-panel{display:none;min-width:0;border:1px solid #d7e2db;border-radius:13px;background:#f7faf8;overflow:hidden;align-self:stretch}
-    body.can-edit.admin-notes-visible .topic-card{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(270px,38%);column-gap:14px;align-items:start}
-    body.can-edit.admin-notes-visible .topic-card>.topic-card-head,
-    body.can-edit.admin-notes-visible .topic-card>.topic-content,
-    body.can-edit.admin-notes-visible .topic-card>.topic-edit-btn{grid-column:1}
-    body.can-edit.admin-notes-visible .topic-card>.admin-chat-panel{display:flex;flex-direction:column;grid-column:2;grid-row:1 / span 8;min-height:100%}
-    .admin-chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-bottom:1px solid #dce6df;background:#edf4ef;color:#285341}
-    .admin-chat-head strong{font-size:.76rem;text-transform:uppercase;letter-spacing:.05em}
-    .admin-chat-count{font-size:.68rem;font-weight:800;color:#6d7e75}
-    .admin-chat-messages{display:flex;flex-direction:column;gap:7px;min-height:96px;max-height:245px;overflow:auto;padding:10px;overscroll-behavior:contain}
-    .admin-chat-empty{margin:auto 0;color:#89968f;font-size:.77rem;font-style:italic;text-align:center;padding:12px 6px}
-    .admin-chat-message{position:relative;align-self:flex-start;max-width:92%;padding:8px 10px;border:1px solid #dce5df;border-radius:11px 11px 11px 4px;background:#fff;color:#35473e;box-shadow:0 1px 2px rgba(18,44,34,.04)}
+
+    body.can-edit.admin-notes-visible main{width:min(1440px,calc(100% - 16px));margin-left:16px;margin-right:0}
+    .admin-chat-host{position:relative;--admin-chat-width:245px;--admin-chat-gap:15px}
+    .section.admin-chat-host{--admin-host-pad:clamp(20px,3vw,34px)}
+    .hero.admin-chat-host{--admin-host-pad:clamp(28px,5vw,60px)}
+    body.can-edit.admin-notes-visible .admin-chat-host{padding-right:calc(var(--admin-host-pad) + var(--admin-chat-width) + var(--admin-chat-gap))}
+
+    .admin-chat-panel{display:none;min-width:0;border:1px solid #d7e2db;border-radius:13px;background:#f7faf8;overflow:hidden}
+    body.can-edit.admin-notes-visible .admin-section-chat{display:flex;position:absolute;z-index:5;top:var(--admin-host-pad);right:var(--admin-host-pad);bottom:var(--admin-host-pad);width:var(--admin-chat-width);min-height:0;flex-direction:column}
+    .admin-chat-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;padding:9px 10px;border-bottom:1px solid #dce6df;background:#edf4ef;color:#285341}
+    .admin-chat-head strong{min-width:0;font-size:.73rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .admin-chat-count{flex:0 0 auto;font-size:.64rem;font-weight:800;color:#6d7e75}
+    .admin-chat-messages{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:7px;overflow:auto;padding:9px;overscroll-behavior:contain;scrollbar-gutter:stable}
+    .admin-chat-empty{margin:auto 0;color:#89968f;font-size:.74rem;font-style:italic;text-align:center;padding:10px 5px}
+    .admin-chat-message{position:relative;align-self:flex-start;max-width:94%;padding:7px 9px;border:1px solid #dce5df;border-radius:11px 11px 11px 4px;background:#fff;color:#35473e;box-shadow:0 1px 2px rgba(18,44,34,.04)}
     .admin-chat-message.own{align-self:flex-end;border-color:#bdd2c5;border-radius:11px 11px 4px 11px;background:#e7f1ea}
-    .admin-chat-message p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem;line-height:1.42}
-    .admin-chat-meta{display:flex;align-items:center;gap:6px;margin-top:5px;color:#7c8982;font-size:.62rem;font-weight:700}
+    .admin-chat-message p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.75rem;line-height:1.4}
+    .admin-chat-meta{display:flex;align-items:center;gap:5px;margin-top:5px;color:#7c8982;font-size:.59rem;font-weight:700}
     .admin-chat-delete{margin-left:auto;border:0;background:transparent;color:#9a5b54;padding:0 2px;cursor:pointer;font:inherit;font-size:.68rem;opacity:0;transition:opacity .12s ease}
     .admin-chat-message:hover .admin-chat-delete,.admin-chat-delete:focus-visible{opacity:1;outline:none}
-    .admin-chat-compose{display:grid;grid-template-columns:1fr auto;gap:7px;padding:9px;border-top:1px solid #dce6df;background:#fff}
-    .admin-chat-compose textarea{width:100%;min-height:38px;max-height:110px;resize:vertical;padding:8px 9px;border:1px solid #cddbd2;border-radius:9px;background:#fff;color:#30443a;font:inherit;font-size:.76rem;line-height:1.35}
+    .admin-chat-compose{display:grid;grid-template-columns:1fr auto;gap:6px;flex:0 0 auto;padding:8px;border-top:1px solid #dce6df;background:#fff}
+    .admin-chat-compose textarea{width:100%;height:38px;min-height:38px;resize:none;padding:8px 9px;border:1px solid #cddbd2;border-radius:9px;background:#fff;color:#30443a;font:inherit;font-size:.73rem;line-height:1.3}
     .admin-chat-compose textarea:focus{outline:2px solid rgba(31,94,74,.14);border-color:#85aa97}
-    .admin-chat-send{align-self:end;min-height:38px;border:0;border-radius:9px;background:#1f5e4a;color:#fff;padding:0 11px;font:inherit;font-size:.73rem;font-weight:850;cursor:pointer}
+    .admin-chat-send{align-self:end;height:38px;border:0;border-radius:9px;background:#1f5e4a;color:#fff;padding:0 9px;font:inherit;font-size:.69rem;font-weight:850;cursor:pointer}
     .admin-chat-send:disabled{opacity:.5;cursor:not-allowed}
-    .admin-chat-error{grid-column:1/-1;margin:0;color:#a0443b;font-size:.67rem;min-height:0}
-    @media(max-width:1050px){
-      body.can-edit.admin-notes-visible .topic-card{grid-template-columns:1fr!important}
-      body.can-edit.admin-notes-visible .topic-card>.topic-card-head,
-      body.can-edit.admin-notes-visible .topic-card>.topic-content,
-      body.can-edit.admin-notes-visible .topic-card>.topic-edit-btn,
-      body.can-edit.admin-notes-visible .topic-card>.admin-chat-panel{grid-column:1}
-      body.can-edit.admin-notes-visible .topic-card>.admin-chat-panel{grid-row:auto;margin-top:10px;min-height:0}
-      .admin-chat-messages{max-height:210px}
+    .admin-chat-error{grid-column:1/-1;margin:0;color:#a0443b;font-size:.64rem;min-height:0}
+
+    .admin-ribbon-notes{margin:0 0 12px;border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff}
+    body.can-edit.admin-notes-visible .admin-ribbon-notes{display:flex;max-height:250px;flex-direction:column}
+    .admin-ribbon-notes .admin-chat-head{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.12);color:#fff}
+    .admin-ribbon-notes .admin-chat-count{color:rgba(255,255,255,.65)}
+    .admin-ribbon-notes .admin-chat-messages{min-height:75px;background:rgba(4,27,20,.08)}
+    .admin-ribbon-notes .admin-chat-empty{color:rgba(255,255,255,.58)}
+    .admin-ribbon-notes .admin-chat-message{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.10);color:#fff}
+    .admin-ribbon-notes .admin-chat-message.own{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.2)}
+    .admin-ribbon-notes .admin-chat-meta{color:rgba(255,255,255,.58)}
+    .admin-ribbon-notes .admin-chat-compose{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}
+    .admin-ribbon-notes .admin-chat-compose textarea{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.95)}
+    .admin-ribbon-notes .admin-chat-send{background:#f1ead8;color:#174838}
+
+    @media(max-width:1180px){
+      .admin-chat-host{--admin-chat-width:220px;--admin-chat-gap:12px}
+      body.can-edit.admin-notes-visible main{width:calc(100% - 12px);margin-left:12px}
     }
-    @media(max-width:700px){.admin-notes-toggle{font-size:.7rem;padding:6px 8px}.admin-chat-compose{grid-template-columns:1fr}.admin-chat-send{justify-self:end;padding:8px 12px}}
+    @media(max-width:930px){
+      body.can-edit.admin-notes-visible main{width:min(100% - 24px,1180px);margin:0 auto}
+      body.can-edit.admin-notes-visible .admin-chat-host{padding-right:var(--admin-host-pad)}
+      body.can-edit.admin-notes-visible .admin-section-chat{position:relative;inset:auto;width:100%;max-height:300px;margin-top:16px}
+      body.can-edit.admin-notes-visible .admin-section-chat .admin-chat-messages{min-height:100px;max-height:185px}
+    }
+    @media(max-width:700px){
+      .admin-notes-toggle{font-size:.68rem;padding:6px 8px}
+      .admin-notes-toggle span{max-width:120px;white-space:normal;line-height:1.2}
+      .admin-chat-compose{grid-template-columns:1fr}
+      .admin-chat-send{justify-self:end;padding:0 12px}
+    }
   `;
   document.head.appendChild(style);
 
   const esc=(value='')=>String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-
-  function stableTopicKey(card){
-    const raw=card?.dataset?.topicCard||'';
-    const [groupIndex,topicIndex]=raw.split('-').map(Number);
-    try{
-      const fieldId=groups?.[groupIndex]?.topics?.[topicIndex]?.fields?.[0]?.[0];
-      if(fieldId) return `topic:${fieldId}`;
-    }catch(_err){}
-    const chapter=card?.closest('.portfolio-group')?.id||'portfolio';
-    const title=(card?.querySelector('.topic-card-title h4')?.textContent||raw||'onderdeel')
-      .trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    return `${chapter}:${title}`;
-  }
 
   function authorLabel(row){
     if(currentUser && row.created_by===currentUser.id) return 'Jij';
@@ -78,6 +102,25 @@
     const date=new Date(value);
     if(Number.isNaN(date.getTime())) return '';
     return date.toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  }
+
+  function panelMarkup(label){
+    return `<div class="admin-chat-head"><strong>${esc(label)}</strong><span class="admin-chat-count">Nog leeg</span></div>
+      <div class="admin-chat-messages"><p class="admin-chat-empty">Nog geen beheerdernotities.</p></div>
+      <div class="admin-chat-compose">
+        <textarea rows="2" maxlength="4000" data-admin-chat-input placeholder="Typ een notitie…" aria-label="Nieuwe beheerdernotitie"></textarea>
+        <button class="admin-chat-send" data-admin-chat-send type="button">Versturen</button>
+        <p class="admin-chat-error" aria-live="polite"></p>
+      </div>`;
+  }
+
+  function bindPanel(panel){
+    if(panel.dataset.chatBound) return;
+    panel.dataset.chatBound='1';
+    panel.querySelector('[data-admin-chat-send]')?.addEventListener('click',()=>sendMessage(panel));
+    panel.querySelector('[data-admin-chat-input]')?.addEventListener('keydown',event=>{
+      if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage(panel);}
+    });
   }
 
   function ensureToggle(){
@@ -99,7 +142,6 @@
       input.addEventListener('change',()=>{
         visible=input.checked;
         localStorage.setItem(VISIBILITY_KEY,visible?'1':'0');
-        if(visible) scheduleEnhance();
         syncVisibility();
         if(visible) loadMessages(true);
       });
@@ -110,21 +152,65 @@
     if(input) input.checked=visible;
   }
 
+  function ensureSectionPanels(){
+    if(!document.body.classList.contains('can-edit')) return;
+    TARGETS.forEach(item=>{
+      const host=document.querySelector(item.selector);
+      if(!host) return;
+      host.classList.add('admin-chat-host');
+      let panel=host.querySelector(':scope > .admin-section-chat');
+      if(!panel){
+        panel=document.createElement('aside');
+        panel.className='admin-chat-panel admin-section-chat';
+        panel.dataset.adminChatKey=item.key;
+        panel.setAttribute('aria-label',`Beheerdernotities ${item.label}`);
+        panel.innerHTML=panelMarkup(item.label);
+        host.appendChild(panel);
+      }
+      bindPanel(panel);
+      renderPanel(panel);
+    });
+  }
+
+  function ensureRibbonPanel(){
+    if(!document.body.classList.contains('can-edit')) return;
+    const sidebar=document.querySelector('.sidebar');
+    if(!sidebar) return;
+    let panel=sidebar.querySelector(':scope > .admin-ribbon-notes');
+    if(!panel){
+      panel=document.createElement('aside');
+      panel.className='admin-chat-panel admin-ribbon-notes';
+      panel.dataset.adminChatKey=RIBBON.key;
+      panel.setAttribute('aria-label','Lintnotities');
+      panel.innerHTML=panelMarkup(RIBBON.label);
+      const foot=sidebar.querySelector(':scope > .side-foot');
+      sidebar.insertBefore(panel,foot||null);
+    }
+    bindPanel(panel);
+    renderPanel(panel);
+  }
+
   function syncVisibility(){
     const show=document.body.classList.contains('can-edit') && visible;
     document.body.classList.toggle('admin-notes-visible',show);
-    if(show) document.querySelectorAll('.admin-chat-panel').forEach(panel=>renderPanel(panel));
+    if(show){
+      ensureSectionPanels();
+      ensureRibbonPanel();
+      document.querySelectorAll('.admin-chat-panel').forEach(panel=>renderPanel(panel));
+    }
   }
 
   function renderPanel(panel){
-    const key=panel.dataset.topicKey;
-    const list=messagesByTopic.get(key)||[];
+    const key=panel.dataset.adminChatKey;
+    if(!key) return;
+    const list=messagesByKey.get(key)||[];
     const messages=panel.querySelector('.admin-chat-messages');
     const count=panel.querySelector('.admin-chat-count');
     if(count) count.textContent=list.length ? `${list.length} bericht${list.length===1?'':'en'}` : 'Nog leeg';
     if(!messages) return;
     if(!list.length){
-      if(!messages.querySelector('.admin-chat-empty')) messages.innerHTML='<p class="admin-chat-empty">Nog geen beheerdernotities voor dit onderdeel.</p>';
+      messages.dataset.messageSignature='empty';
+      messages.innerHTML='<p class="admin-chat-empty">Nog geen beheerdernotities.</p>';
       return;
     }
     const signature=list.map(row=>row.id).join('|');
@@ -138,14 +224,12 @@
       </article>`;
     }).join('');
     messages.querySelectorAll('.admin-chat-delete').forEach(button=>button.addEventListener('click',async()=>{
-      const messageEl=button.closest('[data-admin-message-id]');
-      const id=messageEl?.dataset.adminMessageId;
+      const id=button.closest('[data-admin-message-id]')?.dataset.adminMessageId;
       if(!id) return;
       button.disabled=true;
       const {error}=await client.from('portfolio_admin_messages').delete().eq('id',id);
       if(error){button.disabled=false;console.error('Beheerbericht verwijderen mislukt:',error);return;}
-      const next=(messagesByTopic.get(key)||[]).filter(row=>row.id!==id);
-      messagesByTopic.set(key,next);
+      messagesByKey.set(key,(messagesByKey.get(key)||[]).filter(row=>row.id!==id));
       messages.dataset.messageSignature='';
       renderPanel(panel);
     }));
@@ -153,6 +237,8 @@
   }
 
   async function sendMessage(panel){
+    const key=panel.dataset.adminChatKey;
+    if(!allowedKeys.includes(key)) return;
     const textarea=panel.querySelector('[data-admin-chat-input]');
     const send=panel.querySelector('[data-admin-chat-send]');
     const errorEl=panel.querySelector('.admin-chat-error');
@@ -165,49 +251,18 @@
     currentUser=session.user;
     if(send) send.disabled=true;
     if(errorEl) errorEl.textContent='';
-    const payload={topic_key:panel.dataset.topicKey,message,created_by:session.user.id,author_email:session.user.email||''};
+    const payload={topic_key:key,message,created_by:session.user.id,author_email:session.user.email||''};
     const {data,error}=await client.from('portfolio_admin_messages').insert(payload).select('id,topic_key,message,created_at,created_by,author_email').single();
     if(send) send.disabled=false;
     if(error){if(errorEl) errorEl.textContent='Bericht opslaan is mislukt.';console.error(error);return;}
     textarea.value='';
-    const list=messagesByTopic.get(data.topic_key)||[];
+    const list=messagesByKey.get(key)||[];
     if(!list.some(row=>row.id===data.id)) list.push(data);
     list.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-    messagesByTopic.set(data.topic_key,list);
+    messagesByKey.set(key,list);
     const messages=panel.querySelector('.admin-chat-messages');
     if(messages) messages.dataset.messageSignature='';
     renderPanel(panel);
-  }
-
-  function enhanceCards(){
-    if(!document.body.classList.contains('can-edit')) return;
-    document.querySelectorAll('.topic-card[data-topic-card]').forEach(card=>{
-      let panel=card.querySelector(':scope > .admin-chat-panel');
-      const key=stableTopicKey(card);
-      if(!panel){
-        panel=document.createElement('aside');
-        panel.className='admin-chat-panel';
-        panel.dataset.topicKey=key;
-        panel.setAttribute('aria-label','Beheerdernotities');
-        panel.innerHTML=`<div class="admin-chat-head"><strong>Beheerdernotities</strong><span class="admin-chat-count">Nog leeg</span></div>
-          <div class="admin-chat-messages"><p class="admin-chat-empty">Nog geen beheerdernotities voor dit onderdeel.</p></div>
-          <div class="admin-chat-compose">
-            <textarea rows="2" maxlength="4000" data-admin-chat-input placeholder="Typ een opmerking of verbetersuggestie…" aria-label="Nieuwe beheerdernotitie"></textarea>
-            <button class="admin-chat-send" data-admin-chat-send type="button">Versturen</button>
-            <p class="admin-chat-error" aria-live="polite"></p>
-          </div>`;
-        card.appendChild(panel);
-        panel.querySelector('[data-admin-chat-send]')?.addEventListener('click',()=>sendMessage(panel));
-        panel.querySelector('[data-admin-chat-input]')?.addEventListener('keydown',event=>{
-          if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage(panel);}
-        });
-      }else if(panel.dataset.topicKey!==key){
-        panel.dataset.topicKey=key;
-        const messages=panel.querySelector('.admin-chat-messages');
-        if(messages) messages.dataset.messageSignature='';
-      }
-      renderPanel(panel);
-    });
   }
 
   function scheduleEnhance(){
@@ -216,7 +271,10 @@
     requestAnimationFrame(()=>{
       enhanceScheduled=false;
       ensureToggle();
-      enhanceCards();
+      if(document.body.classList.contains('can-edit')){
+        ensureSectionPanels();
+        ensureRibbonPanel();
+      }
       syncVisibility();
     });
   }
@@ -230,6 +288,7 @@
     currentUser=session.user;
     const {data,error}=await client.from('portfolio_admin_messages')
       .select('id,topic_key,message,created_at,created_by,author_email')
+      .in('topic_key',allowedKeys)
       .order('created_at',{ascending:true});
     if(error){console.error('Beheerdernotities laden mislukt:',error);return;}
     const next=new Map();
@@ -238,7 +297,7 @@
       list.push(row);
       next.set(row.topic_key,list);
     });
-    messagesByTopic=next;
+    messagesByKey=next;
     document.querySelectorAll('.admin-chat-messages').forEach(el=>{el.dataset.messageSignature=''});
     document.querySelectorAll('.admin-chat-panel').forEach(panel=>renderPanel(panel));
     subscribeRealtime();
@@ -261,34 +320,16 @@
       if(visible) loadMessages(true);
     }else{
       currentUser=null;
-      messagesByTopic=new Map();
+      messagesByKey=new Map();
       document.body.classList.remove('admin-notes-visible');
       if(realtimeChannel){client.removeChannel(realtimeChannel);realtimeChannel=null;}
     }
   }
 
-  function childMutationNeedsEnhance(record){
-    if(record.type!=='childList') return false;
-    if(record.target?.nodeType===1 && record.target.closest?.('.topbar')) return true;
-    return [...record.addedNodes].some(node=>node.nodeType===1 && (
-      node.matches?.('.topic-card,.topic-list') || node.querySelector?.('.topic-card')
-    ));
-  }
-
   new MutationObserver(records=>{
     if(records.some(record=>record.type==='attributes'&&record.target===document.body)) syncAuthState();
-    if(records.some(childMutationNeedsEnhance)) scheduleEnhance();
+    if(records.some(record=>record.type==='childList')) scheduleEnhance();
   }).observe(document.body,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
-
-  window.addEventListener('click',event=>{
-    const exportButton=event.target.closest?.('[data-export-html],[data-export-word],[data-export-pdf]');
-    if(!exportButton) return;
-    const toggle=document.querySelector('.admin-notes-toggle');
-    if(!toggle) return;
-    const wasHidden=toggle.hidden;
-    toggle.hidden=true;
-    setTimeout(()=>{if(toggle.isConnected) toggle.hidden=wasHidden;},0);
-  },true);
 
   client.auth.onAuthStateChange(()=>setTimeout(syncAuthState,0));
   syncAuthState();
