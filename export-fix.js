@@ -38,64 +38,72 @@
 
   async function buildSiteCloneHtml(){
     if(typeof renderChapters==='function') renderChapters();
-    const clone=document.documentElement.cloneNode(true);
 
-    clone.querySelectorAll('.settings-overlay,.auth-overlay,.editor-window,.window-layer,.settings-nav,.manage-btn,.topic-edit-btn,.top-actions,script').forEach(el=>el.remove());
-    const cloneBody=clone.querySelector('body');
-    cloneBody?.classList.remove('can-edit','menu-open');
+    const sourceApp=document.querySelector('.app');
+    if(!sourceApp) throw new Error('Portfolio-opmaak niet gevonden.');
 
-    // De instellingen-popup blokkeert tijdens het exporteren bewust de scroll van de live pagina.
-    // Die tijdelijke runtime-stijlen mogen nooit in de zelfstandige HTML-kopie terechtkomen.
-    clone.style.overflow='';
-    clone.style.height='';
-    clone.style.maxHeight='';
-    clone.style.overscrollBehavior='';
-    if(cloneBody){
-      cloneBody.style.overflow='';
-      cloneBody.style.height='';
-      cloneBody.style.maxHeight='';
-      cloneBody.style.overscrollBehavior='';
-      cloneBody.style.position='';
-    }
+    // Maak bewust alleen een kopie van de zichtbare site. Tijdelijke runtime-elementen
+    // en scroll-locks van modals/beheervensters kunnen zo nooit in de export belanden.
+    const appClone=sourceApp.cloneNode(true);
+    appClone.querySelectorAll('.settings-nav,.manage-btn,.topic-edit-btn,.top-actions,.auth-overlay,.settings-overlay,.editor-window,.window-layer,script').forEach(el=>el.remove());
 
-    const status=clone.querySelector('#saveStatus');
+    const status=appClone.querySelector('#saveStatus');
     if(status) status.textContent='Portfolio';
 
-    const css=await baseCss();
-    clone.querySelectorAll('link[rel="stylesheet"]').forEach(link=>link.remove());
-    if(css){
-      const style=document.createElement('style');
-      style.textContent=css;
-      clone.querySelector('head')?.appendChild(style);
-    }
-
-    const runtimeCss=[...document.head.querySelectorAll('style')].map(s=>s.textContent||'').join('\n');
-    if(runtimeCss){
-      const style=document.createElement('style');
-      style.textContent=runtimeCss+'\nbody:not(.can-edit) .topic-edit-btn{display:none!important}';
-      clone.querySelector('head')?.appendChild(style);
-    }
-
-    const exportReset=document.createElement('style');
-    exportReset.textContent=`
-      html,body{overflow-y:auto!important;overflow-x:hidden!important;height:auto!important;max-height:none!important;overscroll-behavior:auto!important;position:static!important}
-      body{min-height:100vh!important}
-      .app{min-height:100vh!important;height:auto!important;overflow:visible!important}
-      .content,main{height:auto!important;max-height:none!important;overflow:visible!important}
-    `;
-    clone.querySelector('head')?.appendChild(exportReset);
+    const menuButton=appClone.querySelector('#menuBtn');
+    if(menuButton) menuButton.setAttribute('aria-expanded','false');
 
     const imageData=await imageAsDataUrl();
     if(imageData){
-      const img=clone.querySelector('.hero-photo-card img');
+      const img=appClone.querySelector('.hero-photo-card img');
       if(img) img.src=imageData;
     }
 
-    const script=document.createElement('script');
-    script.textContent=`(() => { document.documentElement.style.overflow=''; document.body.style.overflow=''; const b=document.body,m=document.getElementById('menuBtn'); m?.addEventListener('click',()=>{const o=b.classList.toggle('menu-open');m.setAttribute('aria-expanded',String(o));}); document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{b.classList.remove('menu-open');m?.setAttribute('aria-expanded','false');})); })();`;
-    clone.querySelector('body')?.appendChild(script);
+    const css=await baseCss();
+    const exportCss=`
+      html{min-height:100%;height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;scroll-behavior:smooth}
+      body{margin:0!important;min-height:100vh!important;height:auto!important;max-height:none!important;overflow:visible!important;position:static!important;overscroll-behavior:auto!important}
+      .app{min-height:100vh!important;height:auto!important;max-height:none!important;overflow:visible!important;align-items:start}
+      .content{min-height:100vh!important;height:auto!important;max-height:none!important;overflow:visible!important}
+      main{height:auto!important;max-height:none!important;overflow:visible!important}
+      .sidebar{position:sticky!important;top:0!important;align-self:start!important;height:100vh!important}
+      .topic-edit-btn,.manage-btn,.settings-nav,.top-actions{display:none!important}
+      @media(max-width:900px){
+        html{overflow-y:auto!important}
+        body{overflow:visible!important}
+      }
+    `;
 
-    return '<!DOCTYPE html>\n'+clone.outerHTML;
+    const menuScript=`(() => {
+      document.documentElement.removeAttribute('style');
+      document.body.removeAttribute('style');
+      const body=document.body;
+      const menu=document.getElementById('menuBtn');
+      menu?.addEventListener('click',()=>{
+        const open=body.classList.toggle('menu-open');
+        menu.setAttribute('aria-expanded',String(open));
+      });
+      document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{
+        body.classList.remove('menu-open');
+        menu?.setAttribute('aria-expanded','false');
+      }));
+    })();`;
+
+    return `<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f5e4a">
+  <meta name="description" content="Portfolio Wandeltrainer 3 van Tineke Posthuma.">
+  <title>Portfolio Tineke Posthuma · Wandeltrainer 3</title>
+  <style>${css}\n${exportCss}</style>
+</head>
+<body>
+${appClone.outerHTML}
+<script>${menuScript}<\/script>
+</body>
+</html>`;
   }
 
   function topicHtml(topic,number){
@@ -133,9 +141,14 @@
     const message=messageElement(button);
     if(button.matches('[data-export-html]')){
       if(message) message.textContent='Volledige HTML-kopie van de website maken…';
-      const html=await buildSiteCloneHtml();
-      downloadBlob(new Blob([html],{type:'text/html;charset=utf-8'}),'portfolio-tineke-posthuma.html');
-      if(message) message.textContent='Volledige HTML-kopie gedownload.';
+      try{
+        const html=await buildSiteCloneHtml();
+        downloadBlob(new Blob([html],{type:'text/html;charset=utf-8'}),'portfolio-tineke-posthuma.html');
+        if(message) message.textContent='Volledige HTML-kopie gedownload.';
+      }catch(err){
+        console.error(err);
+        if(message) message.textContent='HTML-export maken is mislukt.';
+      }
       return;
     }
 
