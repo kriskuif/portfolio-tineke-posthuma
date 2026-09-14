@@ -4,6 +4,7 @@
   const SUPABASE_URL = 'https://yvxiuslhypwbjkpmtfwy.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
   const VISIBILITY_KEY = 'portfolio-admin-notes-visible-v2';
+  const READ_DWELL_MS = 3000;
   const client = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_KEY);
   if (!client) return;
 
@@ -34,6 +35,7 @@
     initialized: false,
     accessEpoch: 0,
     readPending: new Set(),
+    readViewTimers: new Map(),
     visibleCheckScheduled: false
   };
 
@@ -59,11 +61,14 @@
     .admin-chat-count{flex:0 0 auto;font-size:.64rem;font-weight:850;color:#6d7e75}
     .admin-chat-count.has-unread{color:#9a403b}
     .admin-chat-messages{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;overflow:auto;padding:9px 10px;overscroll-behavior:contain;background:#fbfdfb}
-    .admin-chat-message{padding:8px 2px;border-bottom:1px solid #e2e9e4;color:#35473e}
+    .admin-chat-message{padding:8px 2px;border-bottom:1px solid #e2e9e4;color:#35473e;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease}
     .admin-chat-message:last-child{border-bottom:0}
+    .admin-chat-message.is-unread{margin:4px 0;padding:9px 9px;border:1px solid #b8d4c4;border-left:4px solid #2d7459;border-radius:10px;background:#edf7f0;box-shadow:0 2px 7px rgba(31,94,74,.10)}
+    .admin-chat-message.is-unread:last-child{border-bottom:1px solid #b8d4c4}
     .admin-chat-message p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.76rem;line-height:1.45}
     .admin-chat-author{font-weight:900;color:#24513f}
     .admin-chat-meta{display:flex;align-items:center;gap:7px;margin-top:3px;color:#7c8982;font-size:.59rem;font-weight:700}
+    .admin-chat-new-label{display:inline-flex;align-items:center;padding:2px 6px;border-radius:999px;background:#2d7459;color:#fff;font-size:.56rem;font-weight:900;letter-spacing:.02em;text-transform:uppercase}
     .admin-chat-readby{color:#607a6e}
     .admin-chat-delete{margin-left:auto;border:0;background:transparent;color:#9a5b54;padding:0 2px;cursor:pointer;font:inherit;font-size:.66rem;opacity:.72}
     .admin-chat-delete:hover,.admin-chat-delete:focus-visible{opacity:1;outline:none;text-decoration:underline}
@@ -299,6 +304,8 @@
     const article = document.createElement('article');
     article.className = 'admin-chat-message';
     article.dataset.adminMessageId = String(row.id);
+    const unread = isUnread(row);
+    if (unread) article.classList.add('is-unread');
 
     const p = document.createElement('p');
     const author = document.createElement('strong');
@@ -309,6 +316,12 @@
 
     const meta = document.createElement('div');
     meta.className = 'admin-chat-meta';
+    if (unread) {
+      const fresh = document.createElement('span');
+      fresh.className = 'admin-chat-new-label';
+      fresh.textContent = 'Nieuw';
+      meta.appendChild(fresh);
+    }
     const time = document.createElement('time');
     time.dateTime = row.created_at || '';
     time.textContent = formatTime(row.created_at);
@@ -401,7 +414,7 @@
     state.visibleCheckScheduled = true;
     requestAnimationFrame(() => {
       state.visibleCheckScheduled = false;
-      markActuallyVisibleMessagesRead();
+      updateReadViewTimers();
     });
   }
 
@@ -417,9 +430,25 @@
     return er.height > 0 && visible / er.height >= 0.6;
   }
 
-  async function markActuallyVisibleMessagesRead() {
-    if (!isApproved() || !state.visible) return;
-    const toMark = [];
+  function clearReadViewTimer(id) {
+    const entry = state.readViewTimers.get(String(id));
+    if (!entry) return;
+    clearTimeout(entry.timer);
+    state.readViewTimers.delete(String(id));
+  }
+
+  function clearAllReadViewTimers() {
+    state.readViewTimers.forEach(entry => clearTimeout(entry.timer));
+    state.readViewTimers.clear();
+  }
+
+  function updateReadViewTimers() {
+    if (!isApproved() || !state.visible || document.visibilityState !== 'visible') {
+      clearAllReadViewTimers();
+      return;
+    }
+
+    const visibleNow = new Map();
     document.querySelectorAll('.admin-chat-panel[data-admin-chat-key]').forEach(panel => {
       const container = panel.querySelector('.admin-chat-messages');
       if (!container) return;
@@ -427,13 +456,39 @@
         const id = String(el.dataset.adminMessageId || '');
         const row = state.messageById.get(id);
         if (!row || !isUnread(row) || state.readPending.has(id)) return;
-        if (elementMostlyVisibleInContainer(el, container)) toMark.push(id);
+        if (elementMostlyVisibleInContainer(el, container)) visibleNow.set(id, { el, container });
       });
     });
-    if (!toMark.length) return;
 
-    const unique = [...new Set(toMark)];
-    unique.forEach(id => state.readPending.add(id));
+    [...state.readViewTimers.keys()].forEach(id => {
+      if (!visibleNow.has(id)) clearReadViewTimer(id);
+    });
+
+    visibleNow.forEach(({ el, container }, id) => {
+      if (state.readViewTimers.has(id)) return;
+      const timer = setTimeout(async () => {
+        state.readViewTimers.delete(id);
+        const row = state.messageById.get(id);
+        if (!row || !isUnread(row) || state.readPending.has(id)) return;
+        if (!el.isConnected || !elementMostlyVisibleInContainer(el, container)) return;
+        await markMessagesRead([id]);
+      }, READ_DWELL_MS);
+      state.readViewTimers.set(id, { timer, el, container });
+    });
+  }
+
+  async function markMessagesRead(ids) {
+    if (!isApproved()) return;
+    const unique = [...new Set(ids.map(String))].filter(id => {
+      const row = state.messageById.get(id);
+      return row && isUnread(row) && !state.readPending.has(id);
+    });
+    if (!unique.length) return;
+
+    unique.forEach(id => {
+      clearReadViewTimer(id);
+      state.readPending.add(id);
+    });
     const rows = unique.map(id => ({
       message_id: id,
       reader_user_id: currentUserId(),
@@ -444,8 +499,9 @@
 
     const { error } = await client.from('portfolio_admin_message_reads').insert(rows);
     unique.forEach(id => state.readPending.delete(id));
-    if (error) {
+    if (error && error.code !== '23505') {
       console.error('Leesstatus opslaan mislukt:', error);
+      scheduleVisibleReadCheck();
       return;
     }
     await refreshData();
@@ -521,6 +577,7 @@
   }
 
   function teardownUi() {
+    clearAllReadViewTimers();
     document.body.classList.remove('admin-notes-visible');
     document.querySelector('.admin-notes-toggle')?.remove();
     document.querySelectorAll('.admin-chat-panel').forEach(panel => panel.remove());
@@ -607,7 +664,12 @@
   window.addEventListener('resize', scheduleVisibleReadCheck, { passive: true });
   window.addEventListener('focus', () => { scheduleRefresh(); scheduleVisibleReadCheck(); });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { scheduleRefresh(); scheduleVisibleReadCheck(); }
+    if (document.visibilityState === 'visible') {
+      scheduleRefresh();
+      scheduleVisibleReadCheck();
+    } else {
+      clearAllReadViewTimers();
+    }
   });
   window.addEventListener('portfolio-auth-changed', initializeAccess);
   client.auth.onAuthStateChange(() => setTimeout(initializeAccess, 0));
