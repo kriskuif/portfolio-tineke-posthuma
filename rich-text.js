@@ -19,10 +19,14 @@
     .rich-editor ul,.rich-editor ol,.saved-field p ul,.saved-field p ol{margin:.35em 0 .35em 1.45em;padding-left:.7em;white-space:normal}
     .rich-editor li,.saved-field p li{margin:.15em 0}
     .saved-field p span[style*="color"],.rich-editor span[style*="color"]{text-decoration-color:currentColor}
-    .rich-editor a[data-portfolio-file-id],.saved-field p a[data-portfolio-file-id]{color:#1f5e4a;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;font-weight:750;cursor:pointer}
-    .rich-editor a[data-portfolio-file-id]:hover,.saved-field p a[data-portfolio-file-id]:hover{color:#174838;text-decoration-thickness:2px}
+    .rich-editor a[data-portfolio-file-id],.rich-editor a[data-portfolio-file-ids],.saved-field p a[data-portfolio-file-id],.saved-field p a[data-portfolio-file-ids]{color:#1f5e4a;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;font-weight:750;cursor:pointer}
+    .rich-editor a[data-portfolio-file-id]:hover,.rich-editor a[data-portfolio-file-ids]:hover,.saved-field p a[data-portfolio-file-id]:hover,.saved-field p a[data-portfolio-file-ids]:hover{color:#174838;text-decoration-thickness:2px}
   `;
   document.head.appendChild(style);
+
+  function validIds(value){
+    return String(value||'').split(',').map(id=>id.trim().toLowerCase()).filter((id,index,all)=>FILE_ID.test(id)&&all.indexOf(id)===index);
+  }
 
   function sanitize(html){
     const doc = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html');
@@ -36,20 +40,25 @@
           return;
         }
         const colorStyle = child.tagName === 'SPAN' ? (child.getAttribute('style') || '') : '';
-        const fileId = child.tagName === 'A' ? (child.getAttribute('data-portfolio-file-id') || '') : '';
+        const singleId = child.tagName === 'A' ? (child.getAttribute('data-portfolio-file-id') || '') : '';
+        const multipleIds = child.tagName === 'A' ? validIds(child.getAttribute('data-portfolio-file-ids') || '') : [];
         const fileCategory = child.tagName === 'A' ? (child.getAttribute('data-portfolio-file-category') || '') : '';
         [...child.attributes].forEach(attr => child.removeAttribute(attr.name));
         if(child.tagName === 'SPAN'){
           const match=colorStyle.match(/color\s*:\s*(#[0-9a-f]{6})/i);
           if(match && HEX.test(match[1])) child.setAttribute('style',`color:${match[1].toLowerCase()}`);
         }
-        if(child.tagName === 'A' && FILE_ID.test(fileId) && ['evidence','attachment'].includes(fileCategory)){
-          child.setAttribute('href','#');
-          child.setAttribute('data-portfolio-file-id',fileId.toLowerCase());
-          child.setAttribute('data-portfolio-file-category',fileCategory);
-        }else if(child.tagName === 'A'){
-          child.replaceWith(...child.childNodes);
-          return;
+        if(child.tagName === 'A'){
+          const ids=multipleIds.length ? multipleIds : (FILE_ID.test(singleId) ? [singleId.toLowerCase()] : []);
+          if(ids.length){
+            child.setAttribute('href','#');
+            child.setAttribute('data-portfolio-file-ids',ids.join(','));
+            child.setAttribute('data-portfolio-file-id',ids[0]);
+            if(ids.length===1 && ['evidence','attachment'].includes(fileCategory)) child.setAttribute('data-portfolio-file-category',fileCategory);
+          }else{
+            child.replaceWith(...child.childNodes);
+            return;
+          }
         }
         clean(child);
       });
@@ -79,7 +88,7 @@
       <button class="rich-tool" type="button" data-rich-command="underline" title="Onderstrepen" aria-label="Onderstrepen"><u>U</u></button>
       <button class="rich-tool" type="button" data-rich-command="insertUnorderedList" title="Opsomming" aria-label="Opsomming">• ≡</button>
       <button class="rich-tool" type="button" data-rich-command="insertOrderedList" title="Genummerde opsomming" aria-label="Genummerde opsomming">1. ≡</button>
-      <button class="rich-tool rich-file-tool" type="button" data-rich-file-link title="Koppel geselecteerde tekst aan een bewijsstuk of bijlage" aria-label="Koppel aan bewijsstuk of bijlage">🔗 Koppel bewijs/bijlage</button>
+      <button class="rich-tool rich-file-tool" type="button" data-rich-file-link title="Selecteer tekst om te koppelen" aria-label="Koppel aan bewijsstuk of bijlage">🔗 Koppel bewijs/bijlage</button>
       <label class="rich-color-label" title="Tekstkleur">Kleur <input class="rich-color" type="color" value="#1f5e4a" aria-label="Tekstkleur"></label>`;
     const editor=document.createElement('div');
     editor.className='rich-editor';
@@ -106,13 +115,16 @@
       textarea.dispatchEvent(new Event('input',{bubbles:true}));
       rememberSelection();
     };
-    const applyFileLink=item=>{
-      if(!savedRange || savedRange.collapsed || !editor.contains(savedRange.commonAncestorContainer)) return false;
+    const applyFileLinks=items=>{
+      const cleanItems=(items||[]).filter(item=>FILE_ID.test(String(item?.id||''))).filter((item,index,all)=>all.findIndex(x=>String(x.id).toLowerCase()===String(item.id).toLowerCase())===index);
+      if(!cleanItems.length || !savedRange || savedRange.collapsed || !editor.contains(savedRange.commonAncestorContainer)) return false;
       const range=savedRange.cloneRange();
       const link=document.createElement('a');
+      const ids=cleanItems.map(item=>String(item.id).toLowerCase());
       link.href='#';
-      link.dataset.portfolioFileId=String(item.id||'').toLowerCase();
-      link.dataset.portfolioFileCategory=item.category;
+      link.dataset.portfolioFileIds=ids.join(',');
+      link.dataset.portfolioFileId=ids[0];
+      if(cleanItems.length===1 && ['evidence','attachment'].includes(cleanItems[0].category)) link.dataset.portfolioFileCategory=cleanItems[0].category;
       try{
         const fragment=range.extractContents();
         if(!fragment.textContent?.trim()) return false;
@@ -126,6 +138,7 @@
       sync();
       return true;
     };
+    const applyFileLink=item=>applyFileLinks([item]);
 
     editor.addEventListener('keyup',rememberSelection);
     editor.addEventListener('mouseup',rememberSelection);
@@ -136,7 +149,7 @@
       document.execCommand('insertText',false,text);
     });
     editor.addEventListener('click',e=>{
-      if(e.target.closest('a[data-portfolio-file-id]')) e.preventDefault();
+      if(e.target.closest('a[data-portfolio-file-id],a[data-portfolio-file-ids]')) e.preventDefault();
     });
     toolbar.querySelectorAll('[data-rich-command]').forEach(btn=>{
       btn.addEventListener('mousedown',e=>{e.preventDefault();rememberSelection()});
@@ -149,7 +162,8 @@
       document.dispatchEvent(new CustomEvent('portfolio:link-file-request',{detail:{
         hasSelection:!!savedRange && !savedRange.collapsed,
         selectedText:savedRange && !savedRange.collapsed ? savedRange.toString() : '',
-        applyFileLink
+        applyFileLink,
+        applyFileLinks
       }}));
     });
     const color=toolbar.querySelector('.rich-color');
