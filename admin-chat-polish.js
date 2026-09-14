@@ -1,4 +1,12 @@
 (() => {
+  const SUPABASE_URL='https://yvxiuslhypwbjkpmtfwy.supabase.co';
+  const SUPABASE_KEY='sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
+  const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
+
+  const messageInfo=new Map();
+  let refreshPromise=null;
+  let healTimer=null;
+
   const style=document.createElement('style');
   style.textContent=`
     body.can-edit.admin-notes-visible main{
@@ -33,6 +41,7 @@
       background:transparent!important;
       border-color:transparent!important;
     }
+    .admin-chat-author{font-weight:900;color:#24513f}
     .admin-ribbon-notes .admin-chat-author{color:#174838!important}
     .admin-ribbon-notes .admin-chat-meta{color:#7c8982!important}
 
@@ -49,9 +58,46 @@
   `;
   document.head.appendChild(style);
 
-  let scheduled=false;
+  function formatTime(value){
+    const date=new Date(value);
+    if(Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('nl-NL',{
+      day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'
+    });
+  }
+
+  function decorateMessages(){
+    let missingInfo=false;
+    document.querySelectorAll('.admin-chat-message[data-admin-message-id]').forEach(message=>{
+      const id=String(message.dataset.adminMessageId||'');
+      const info=messageInfo.get(id);
+      if(!info){
+        missingInfo=true;
+        return;
+      }
+
+      const p=message.querySelector(':scope > p');
+      if(p){
+        let author=p.querySelector(':scope > .admin-chat-author');
+        if(!author){
+          author=document.createElement('strong');
+          author.className='admin-chat-author';
+          p.prepend(author);
+        }
+        const wanted=`${info.name}: `;
+        if(author.textContent!==wanted) author.textContent=wanted;
+      }
+
+      const time=message.querySelector('.admin-chat-meta time');
+      if(time){
+        const wanted=formatTime(info.createdAt);
+        if(wanted && time.textContent!==wanted) time.textContent=wanted;
+      }
+    });
+    return missingInfo;
+  }
+
   function polish(){
-    scheduled=false;
     document.querySelectorAll('.admin-chat-panel').forEach(panel=>{
       const title=panel.querySelector('.admin-chat-head strong');
       if(title && title.textContent!=='Vragen / opmerkingen / notities'){
@@ -62,16 +108,89 @@
         count.textContent='';
       }
     });
+    return decorateMessages();
   }
 
-  function schedulePolish(){
-    if(scheduled) return;
-    scheduled=true;
-    requestAnimationFrame(polish);
+  async function refreshInfo(){
+    if(!client || !document.body.classList.contains('can-edit')) return;
+    if(refreshPromise) return refreshPromise;
+    refreshPromise=(async()=>{
+      try{
+        const {data,error}=await client.from('portfolio_admin_messages')
+          .select('id,author_name,created_at');
+        if(error) throw error;
+        messageInfo.clear();
+        (data||[]).forEach(row=>{
+          const name=String(row.author_name||'Beheerder').trim()||'Beheerder';
+          messageInfo.set(String(row.id),{name,createdAt:row.created_at});
+        });
+        polish();
+      }catch(error){
+        console.error('Beheerdernamen laden mislukt:',error);
+      }finally{
+        refreshPromise=null;
+      }
+    })();
+    return refreshPromise;
   }
 
-  polish();
-  new MutationObserver(records=>{
-    if(records.some(record=>record.type==='childList')) schedulePolish();
-  }).observe(document.body,{childList:true,subtree:true});
+  function heal(){
+    const missing=polish();
+    if(missing) refreshInfo();
+
+    requestAnimationFrame(()=>{
+      const stillMissing=polish();
+      if(stillMissing) refreshInfo();
+    });
+
+    clearTimeout(healTimer);
+    healTimer=setTimeout(()=>{
+      const stillMissing=polish();
+      if(stillMissing) refreshInfo();
+    },90);
+  }
+
+  const observer=new MutationObserver(records=>{
+    const relevant=records.some(record=>
+      record.type==='childList' ||
+      (record.type==='attributes' && record.target===document.body)
+    );
+    if(relevant) heal();
+  });
+  observer.observe(document.body,{
+    childList:true,
+    subtree:true,
+    attributes:true,
+    attributeFilter:['class']
+  });
+
+  window.addEventListener('focus',()=>{
+    heal();
+    setTimeout(refreshInfo,40);
+  });
+  window.addEventListener('pageshow',()=>{
+    heal();
+    setTimeout(refreshInfo,40);
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'){
+      heal();
+      setTimeout(refreshInfo,40);
+      setTimeout(heal,180);
+    }
+  });
+  window.addEventListener('portfolio-admin-display-name-changed',()=>{
+    refreshInfo();
+    setTimeout(heal,50);
+  });
+
+  if(client){
+    client.auth.onAuthStateChange(()=>{
+      setTimeout(refreshInfo,0);
+      setTimeout(heal,80);
+    });
+  }
+
+  heal();
+  refreshInfo();
 })();
