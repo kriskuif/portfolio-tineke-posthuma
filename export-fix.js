@@ -41,7 +41,23 @@
     const clone=document.documentElement.cloneNode(true);
 
     clone.querySelectorAll('.settings-overlay,.auth-overlay,.editor-window,.window-layer,.settings-nav,.manage-btn,.topic-edit-btn,.top-actions,script').forEach(el=>el.remove());
-    clone.querySelector('body')?.classList.remove('can-edit','menu-open');
+    const cloneBody=clone.querySelector('body');
+    cloneBody?.classList.remove('can-edit','menu-open');
+
+    // De instellingen-popup blokkeert tijdens het exporteren bewust de scroll van de live pagina.
+    // Die tijdelijke runtime-stijlen mogen nooit in de zelfstandige HTML-kopie terechtkomen.
+    clone.style.overflow='';
+    clone.style.height='';
+    clone.style.maxHeight='';
+    clone.style.overscrollBehavior='';
+    if(cloneBody){
+      cloneBody.style.overflow='';
+      cloneBody.style.height='';
+      cloneBody.style.maxHeight='';
+      cloneBody.style.overscrollBehavior='';
+      cloneBody.style.position='';
+    }
+
     const status=clone.querySelector('#saveStatus');
     if(status) status.textContent='Portfolio';
 
@@ -60,6 +76,15 @@
       clone.querySelector('head')?.appendChild(style);
     }
 
+    const exportReset=document.createElement('style');
+    exportReset.textContent=`
+      html,body{overflow-y:auto!important;overflow-x:hidden!important;height:auto!important;max-height:none!important;overscroll-behavior:auto!important;position:static!important}
+      body{min-height:100vh!important}
+      .app{min-height:100vh!important;height:auto!important;overflow:visible!important}
+      .content,main{height:auto!important;max-height:none!important;overflow:visible!important}
+    `;
+    clone.querySelector('head')?.appendChild(exportReset);
+
     const imageData=await imageAsDataUrl();
     if(imageData){
       const img=clone.querySelector('.hero-photo-card img');
@@ -67,7 +92,7 @@
     }
 
     const script=document.createElement('script');
-    script.textContent=`(() => { const b=document.body,m=document.getElementById('menuBtn'); m?.addEventListener('click',()=>{const o=b.classList.toggle('menu-open');m.setAttribute('aria-expanded',String(o));}); document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{b.classList.remove('menu-open');m?.setAttribute('aria-expanded','false');})); })();`;
+    script.textContent=`(() => { document.documentElement.style.overflow=''; document.body.style.overflow=''; const b=document.body,m=document.getElementById('menuBtn'); m?.addEventListener('click',()=>{const o=b.classList.toggle('menu-open');m.setAttribute('aria-expanded',String(o));}); document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{b.classList.remove('menu-open');m?.setAttribute('aria-expanded','false');})); })();`;
     clone.querySelector('body')?.appendChild(script);
 
     return '<!DOCTYPE html>\n'+clone.outerHTML;
