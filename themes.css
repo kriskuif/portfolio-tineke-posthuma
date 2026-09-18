@@ -338,6 +338,75 @@ html[data-portfolio-theme] .section-icon{
   transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .22s ease;
 }
 
+/* Subtiele hero-symbolen per thema. De basislay-out blijft gelijk. */
+.hero-theme-symbols{
+  position:absolute;
+  right:clamp(250px,28vw,370px);
+  top:38px;
+  width:220px;
+  height:220px;
+  z-index:1;
+  pointer-events:none;
+  color:var(--forest);
+}
+.theme-symbol{
+  display:none;
+  width:100%;
+  height:100%;
+  opacity:.11;
+}
+html[data-portfolio-theme="wandelgids"] .theme-symbol-tree{display:block}
+html[data-portfolio-theme="tijdschrift"] .theme-symbol-oak{display:block;opacity:.12}
+html[data-portfolio-theme="dagboek"] .theme-symbol-compass{display:block;opacity:.11}
+html[data-portfolio-theme="minimal"] .theme-symbol-shell{display:block;opacity:.12}
+
+html[data-portfolio-theme="natuurlijk"] .hero-theme-symbols{display:none}
+html:not([data-portfolio-theme="natuurlijk"]) .trail{display:none!important}
+html[data-portfolio-theme="natuurlijk"] .trail{
+  display:block;
+  right:clamp(250px,27vw,350px);
+  top:36px;
+  width:275px;
+  height:225px;
+  opacity:.31;
+}
+html[data-portfolio-theme="natuurlijk"] .trail svg{
+  width:100%;
+  height:100%;
+}
+
+@media(max-width:980px){
+  .hero-theme-symbols{
+    right:20px;
+    top:34px;
+    width:190px;
+    height:190px;
+  }
+  html[data-portfolio-theme="natuurlijk"] .trail{
+    right:12px;
+    top:28px;
+    width:230px;
+    height:190px;
+    opacity:.20;
+  }
+}
+@media(max-width:700px){
+  .hero-theme-symbols{
+    right:-10px;
+    top:26px;
+    width:165px;
+    height:165px;
+  }
+  .theme-symbol{opacity:.08!important}
+  html[data-portfolio-theme="natuurlijk"] .trail{
+    right:-6px;
+    top:28px;
+    width:190px;
+    height:160px;
+    opacity:.14;
+  }
+}
+
 /* Themawisselaar in de bovenbalk */
 .theme-switcher{
   position:relative;
