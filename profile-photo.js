@@ -3,7 +3,7 @@
   const SUPABASE_KEY = 'sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
   const BUCKET = 'portfolio-assets';
   const OBJECT_PATH = 'profile/tineke-profile';
-  const FALLBACK_SRC = 'assets/images/tineke-met-zoon.jpg?v=20260913-2145';
+  const DEFAULT_SRC = 'https://yvxiuslhypwbjkpmtfwy.supabase.co/storage/v1/object/public/portfolio-assets/profile/tineke-profile';
   const MAX_BYTES = 5 * 1024 * 1024;
   const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
   const client = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_KEY);
@@ -31,16 +31,10 @@
       img.dataset.profilePhotoSource = 'supabase';
     };
     probe.onerror = () => {
-      if (!img.dataset.profilePhotoSource) img.src = FALLBACK_SRC;
+      img.removeAttribute('src');
+      img.alt = 'Profielfoto tijdelijk niet beschikbaar';
     };
     probe.src = url;
-  }
-
-  function restoreFallback(){
-    const img = heroImage();
-    if (!img) return;
-    img.src = FALLBACK_SRC;
-    delete img.dataset.profilePhotoSource;
   }
 
   function injectSettingsCard(overlay){
@@ -48,7 +42,7 @@
     const grid = overlay.querySelector('.settings-grid');
     if (!grid) return;
 
-    const currentSrc = heroImage()?.src || FALLBACK_SRC;
+    const currentSrc = heroImage()?.src || DEFAULT_SRC;
     const card = document.createElement('article');
     card.className = 'settings-card wide';
     card.dataset.profilePhotoCard = '';
@@ -66,7 +60,6 @@
           <small style="color:#66746e;line-height:1.45">JPG, PNG of WebP, maximaal 5 MB. Controleer het voorbeeld voordat je opslaat.</small>
           <div class="settings-actions" style="margin-top:4px">
             <button class="settings-btn" type="button" data-save-profile-photo disabled>Foto opslaan</button>
-            <button class="settings-btn secondary" type="button" data-reset-profile-photo>Standaardfoto herstellen</button>
           </div>
           <p class="settings-message" data-profile-message></p>
         </div>
@@ -79,7 +72,6 @@
     const input = card.querySelector('[data-profile-file]');
     const preview = card.querySelector('[data-profile-preview]');
     const save = card.querySelector('[data-save-profile-photo]');
-    const reset = card.querySelector('[data-reset-profile-photo]');
     const message = card.querySelector('[data-profile-message]');
     let selected = null;
     let previewObjectUrl = null;
@@ -90,7 +82,7 @@
       if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
       previewObjectUrl = null;
       if (!selected) {
-        preview.src = heroImage()?.src || FALLBACK_SRC;
+        preview.src = heroImage()?.src || DEFAULT_SRC;
         message.textContent = '';
         return;
       }
@@ -116,7 +108,6 @@
       if (!selected) return;
       save.disabled = true;
       input.disabled = true;
-      reset.disabled = true;
       message.textContent = 'Foto uploaden…';
       try {
         const { error } = await client.storage.from(BUCKET).upload(OBJECT_PATH, selected, {
@@ -142,34 +133,10 @@
         message.textContent = `Opslaan is mislukt: ${err?.message || 'onbekende fout'}`;
       } finally {
         input.disabled = false;
-        reset.disabled = false;
         save.disabled = true;
       }
     });
 
-    reset?.addEventListener('click', async () => {
-      const approved = window.confirm('De centraal opgeslagen profielfoto wordt verwijderd. Daarna wordt de oorspronkelijke standaardfoto weer voor iedereen getoond. Doorgaan?');
-      if (!approved) return;
-      save.disabled = true;
-      input.disabled = true;
-      reset.disabled = true;
-      message.textContent = 'Standaardfoto herstellen…';
-      try {
-        const { error } = await client.storage.from(BUCKET).remove([OBJECT_PATH]);
-        if (error) throw error;
-        restoreFallback();
-        preview.src = heroImage()?.src || FALLBACK_SRC;
-        input.value = '';
-        selected = null;
-        message.textContent = 'De standaardfoto is hersteld.';
-      } catch (err) {
-        console.error(err);
-        message.textContent = `Herstellen is mislukt: ${err?.message || 'onbekende fout'}`;
-      } finally {
-        input.disabled = false;
-        reset.disabled = false;
-      }
-    });
   }
 
   const observer = new MutationObserver(() => {
