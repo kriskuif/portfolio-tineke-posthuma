@@ -487,40 +487,12 @@ document.getElementById('importFile')?.addEventListener('change',async event=>{
 });
 
 const navLinks=[...document.querySelectorAll('.nav a')];
-
-function addBinderTabs(){
-  const chapterLinks=groups.map((group,index)=>({
-    href:`#hoofdstuk-${index+1}`,
-    number:group.n,
-    title:group.title
-  }));
-  document.querySelectorAll('.portfolio-group[data-group]').forEach(section=>{
-    if(section.querySelector('.binder-tabs')) return;
-    const tabs=document.createElement('nav');
-    tabs.className='binder-tabs';
-    tabs.setAttribute('aria-label','Hoofdstukken');
-    tabs.innerHTML=chapterLinks.map(item=>`<a class="binder-tab" href="${item.href}" aria-label="Hoofdstuk ${item.number}: ${esc(item.title)}" title="Hoofdstuk ${item.number} · ${esc(item.title)}">${item.number}</a>`).join('');
-    section.prepend(tabs);
-  });
-}
-
-function setActivePage(href){
-  navLinks.forEach(link=>link.classList.toggle('active',link.getAttribute('href')===href));
-  document.querySelectorAll('.binder-tab').forEach(tab=>{
-    const active=tab.getAttribute('href')===href;
-    tab.classList.toggle('active',active);
-    if(active) tab.setAttribute('aria-current','page');
-    else tab.removeAttribute('aria-current');
-  });
-}
-
-addBinderTabs();
-
 const observed=[...document.querySelectorAll('main section[id]')];
 const observer=new IntersectionObserver(entries=>{
   const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
   if(!visible) return;
-  setActivePage(`#${visible.target.id}`);
+  const href=`#${visible.target.id}`;
+  navLinks.forEach(link=>link.classList.toggle('active',link.getAttribute('href')===href));
 },{rootMargin:'-15% 0px -65% 0px',threshold:[0,.1,.35]});
 observed.forEach(section=>observer.observe(section));
 
