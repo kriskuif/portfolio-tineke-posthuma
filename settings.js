@@ -268,7 +268,8 @@
         bg:'#f8f5ed',paper:'#fffefb',ink:'#24323a',muted:'#6b797e',line:'#d9e1df',
         accent:'#245b78',accentSoft:'#dfecef',heroA:'#f6ebd5',heroB:'#dfeef1',
         bodyFont:'Verdana, Geneva, sans-serif',titleFont:'Palatino Linotype, Georgia, serif',
-        pattern:'radial-gradient(ellipse at 88% 12%, rgba(91,158,183,.16) 0 13%, transparent 13.5%), radial-gradient(ellipse at 78% 100%, rgba(217,191,130,.20) 0 18%, transparent 18.5%)'
+        pattern:'radial-gradient(ellipse at 88% 12%, rgba(91,158,183,.16) 0 13%, transparent 13.5%), radial-gradient(ellipse at 78% 100%, rgba(217,191,130,.20) 0 18%, transparent 18.5%)',
+        bodyBg:'url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20600%20180%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%235f9fb4%22%20stroke-linecap%3D%22round%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M0%2048%20C75%2018%20150%2018%20225%2048%20S375%2078%20450%2048%20S525%2018%20600%2048%22%20stroke-width%3D%222.2%22%20opacity%3D%22.13%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M0%2092%20C75%2062%20150%2062%20225%2092%20S375%20122%20450%2092%20S525%2062%20600%2092%22%20stroke-width%3D%221.8%22%20opacity%3D%22.09%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M0%20136%20C75%20106%20150%20106%20225%20136%20S375%20166%20450%20136%20S525%20106%20600%20136%22%20stroke-width%3D%221.5%22%20opacity%3D%22.07%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E") repeat, linear-gradient(180deg,#eef6f7 0,#f8f5ed 220px,#f8f5ed 100%)'
       }
     };
     return profiles[id] || profiles.natuurlijk;
@@ -328,7 +329,7 @@
       @page{margin:18mm}
       *{box-sizing:border-box}
       html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      body{margin:0;background:${theme.bg};color:${theme.ink};font-family:${theme.bodyFont};line-height:1.55}
+      body{margin:0;background:${theme.bodyBg||theme.bg};color:${theme.ink};font-family:${theme.bodyFont};line-height:1.55}
       .page{max-width:900px;margin:auto;padding:34px}
       .cover{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr 230px;gap:32px;align-items:center;padding:34px;border:1px solid ${theme.line};border-radius:24px;background:${theme.pattern},linear-gradient(135deg,${theme.heroA},${theme.heroB});margin-bottom:24px}
       .cover>div,.portrait{position:relative;z-index:2}
