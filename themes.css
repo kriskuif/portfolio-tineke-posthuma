@@ -361,6 +361,8 @@ html[data-portfolio-theme="dagboek"] .theme-symbol-compass{display:block;opacity
 html[data-portfolio-theme="minimal"] .theme-symbol-shell{display:block;opacity:.12}
 
 html[data-portfolio-theme="natuurlijk"] .hero-theme-symbols{display:none}
+html:not([data-portfolio-theme="natuurlijk"]) .hero:before,
+html:not([data-portfolio-theme="natuurlijk"]) .hero:after{display:none}
 html:not([data-portfolio-theme="natuurlijk"]) .trail{display:none!important}
 html[data-portfolio-theme="natuurlijk"] .trail{
   display:block;
