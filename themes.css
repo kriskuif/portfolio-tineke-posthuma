@@ -362,7 +362,14 @@ html[data-portfolio-theme] .section-icon{
   overflow:visible;
   shape-rendering:geometricPrecision;
 }
-html[data-portfolio-theme="wandelgids"] .theme-symbol-tree{display:block}
+html[data-portfolio-theme="wandelgids"] .theme-symbol-tree{
+  display:block;
+  position:absolute;
+  width:140%;
+  height:140%;
+  left:-38%;
+  top:-18%;
+}
 html[data-portfolio-theme="tijdschrift"] .theme-symbol-leaf{display:block;opacity:.12}
 html[data-portfolio-theme="dagboek"] .theme-symbol-compass{display:block;opacity:.11}
 html[data-portfolio-theme="minimal"] .theme-symbol-shell{
@@ -618,5 +625,22 @@ body.can-edit .theme-switcher{display:flex}
   html[data-portfolio-theme="dagboek"] body{
     background-position:63% 36%;
     background-size:max(860px,205vw) max(860px,205vw);
+  }
+}
+
+@media(max-width:980px){
+  html[data-portfolio-theme="wandelgids"] .theme-symbol-tree{
+    width:130%;
+    height:130%;
+    left:-24%;
+    top:-12%;
+  }
+}
+@media(max-width:700px){
+  html[data-portfolio-theme="wandelgids"] .theme-symbol-tree{
+    width:120%;
+    height:120%;
+    left:-10%;
+    top:-8%;
   }
 }
