@@ -1,0 +1,545 @@
+/* Thema's voor Portfolio Tineke Posthuma
+   Natuurlijk gebruikt de bestaande vormgeving. De overige thema's veranderen
+   bewust zowel kleurgebruik als compositie/layout. */
+
+html[data-portfolio-theme="natuurlijk"]{
+  --forest:#1f5e4a;
+  --forest-2:#2f7a61;
+  --leaf:#87aa6f;
+  --sand:#efe7d4;
+  --cream:#fbfaf6;
+  --ink:#1d2924;
+  --muted:#66746e;
+  --line:#dfe5df;
+}
+
+/* 2. Wandelgids — warm papier, beeld links, rustige veldgids-opbouw */
+html[data-portfolio-theme="wandelgids"]{
+  --forest:#315c45;
+  --forest-2:#54745c;
+  --leaf:#91a879;
+  --sand:#e8ddc4;
+  --cream:#f4efe4;
+  --ink:#283329;
+  --muted:#6d7469;
+  --line:#d9d1bf;
+  --shadow:0 12px 30px rgba(73,67,49,.09);
+  --radius:12px;
+  --sidebar:238px;
+}
+html[data-portfolio-theme="wandelgids"] body{
+  background:
+    linear-gradient(rgba(95,82,55,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(95,82,55,.018) 1px,transparent 1px),
+    var(--cream);
+  background-size:24px 24px;
+}
+html[data-portfolio-theme="wandelgids"] .sidebar{
+  background:#e8dfca;
+  color:#334538;
+  border-right:1px solid #d2c6aa;
+}
+html[data-portfolio-theme="wandelgids"] .brand,
+html[data-portfolio-theme="wandelgids"] .side-foot,
+html[data-portfolio-theme="wandelgids"] .settings-nav{border-color:rgba(66,77,62,.14)}
+html[data-portfolio-theme="wandelgids"] .brand p,
+html[data-portfolio-theme="wandelgids"] .side-foot{color:#6a7167}
+html[data-portfolio-theme="wandelgids"] .nav a,
+html[data-portfolio-theme="wandelgids"] .settings-nav button{color:#4f5f52}
+html[data-portfolio-theme="wandelgids"] .nav a:hover,
+html[data-portfolio-theme="wandelgids"] .nav a.active,
+html[data-portfolio-theme="wandelgids"] .settings-nav button:hover{
+  background:#f6f1e6;
+  color:#264c38;
+}
+html[data-portfolio-theme="wandelgids"] .nav .n,
+html[data-portfolio-theme="wandelgids"] .settings-nav .n{background:rgba(49,92,69,.10)}
+html[data-portfolio-theme="wandelgids"] main{width:min(1120px,calc(100% - 54px))}
+html[data-portfolio-theme="wandelgids"] .hero{
+  grid-template-columns:minmax(250px,320px) minmax(0,1fr);
+  background:#f7f1e3;
+  border-radius:14px;
+  padding:34px;
+  min-height:410px;
+  box-shadow:0 16px 32px rgba(73,67,49,.10);
+}
+html[data-portfolio-theme="wandelgids"] .hero-copy{order:2}
+html[data-portfolio-theme="wandelgids"] .hero-photo-card{order:1;justify-self:start;width:100%}
+html[data-portfolio-theme="wandelgids"] .photo-frame{border-radius:8px;padding:7px;box-shadow:none;border-color:#cec3aa}
+html[data-portfolio-theme="wandelgids"] .photo-frame img{border-radius:4px}
+html[data-portfolio-theme="wandelgids"] .hero:before{width:180px;height:180px;right:-70px;top:-75px}
+html[data-portfolio-theme="wandelgids"] .hero:after{display:none}
+html[data-portfolio-theme="wandelgids"] .trail{right:24px;top:25px;width:150px;height:145px}
+html[data-portfolio-theme="wandelgids"] .hero h2{font-size:clamp(2.6rem,5vw,4.8rem)}
+html[data-portfolio-theme="wandelgids"] .section{
+  border-radius:12px;
+  box-shadow:none;
+  background:#fffdf8;
+  border-color:#ddd3be;
+}
+html[data-portfolio-theme="wandelgids"] .journey{grid-template-columns:1fr}
+html[data-portfolio-theme="wandelgids"] .journey-card{
+  min-height:0;
+  border-radius:8px;
+  padding:18px 18px 18px 70px;
+  background:#faf6ed;
+}
+html[data-portfolio-theme="wandelgids"] .topic-list{
+  grid-template-columns:1fr;
+  margin-left:56px;
+}
+html[data-portfolio-theme="wandelgids"] .topic-card{
+  min-height:0;
+  border-radius:8px;
+  background:#fffdf9;
+}
+html[data-portfolio-theme="wandelgids"] .portfolio-group:before{background:#7f9878}
+
+/* 3. Tijdschrift — horizontale navigatie en brede redactionele pagina */
+html[data-portfolio-theme="tijdschrift"]{
+  --forest:#24483f;
+  --forest-2:#3b665d;
+  --leaf:#b08d59;
+  --sand:#eadfcf;
+  --cream:#f5f3ee;
+  --ink:#1d2524;
+  --muted:#69706f;
+  --line:#d8dcda;
+  --shadow:0 18px 46px rgba(24,36,34,.11);
+  --radius:0px;
+}
+html[data-portfolio-theme="tijdschrift"] body{background:#f5f3ee}
+html[data-portfolio-theme="tijdschrift"] .app{display:block!important}
+html[data-portfolio-theme="tijdschrift"] .sidebar{
+  position:sticky!important;
+  top:0;
+  height:auto!important;
+  width:100%;
+  padding:10px clamp(16px,3vw,42px);
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:24px;
+  overflow:visible;
+  background:#172b27;
+  z-index:30;
+}
+html[data-portfolio-theme="tijdschrift"] .brand{
+  padding:0;
+  margin:0;
+  border:0;
+  white-space:nowrap;
+}
+html[data-portfolio-theme="tijdschrift"] .brand-kicker,
+html[data-portfolio-theme="tijdschrift"] .brand p{display:none}
+html[data-portfolio-theme="tijdschrift"] .brand h1{font-size:1.08rem;margin:0}
+html[data-portfolio-theme="tijdschrift"] .nav{
+  flex-direction:row;
+  align-items:center;
+  gap:2px;
+  padding:0;
+  overflow-x:auto;
+}
+html[data-portfolio-theme="tijdschrift"] .nav a{
+  grid-template-columns:auto;
+  padding:8px 10px;
+  white-space:nowrap;
+  font-size:.76rem;
+  border-radius:0;
+}
+html[data-portfolio-theme="tijdschrift"] .nav .n{display:none}
+html[data-portfolio-theme="tijdschrift"] .nav-divider{width:1px;height:26px;margin:0 5px;background:rgba(255,255,255,.18)}
+html[data-portfolio-theme="tijdschrift"] .side-foot{display:none}
+html[data-portfolio-theme="tijdschrift"] .settings-nav{
+  margin:0;
+  padding:0;
+  border:0;
+}
+html[data-portfolio-theme="tijdschrift"] .settings-nav button{
+  grid-template-columns:auto;
+  padding:8px 10px;
+  white-space:nowrap;
+}
+html[data-portfolio-theme="tijdschrift"] .settings-nav .n{display:none}
+html[data-portfolio-theme="tijdschrift"] .content{width:100%}
+html[data-portfolio-theme="tijdschrift"] .topbar{
+  position:static;
+  background:#f5f3ee;
+  border:0;
+  padding-top:16px;
+  padding-bottom:0;
+}
+html[data-portfolio-theme="tijdschrift"] main{width:min(1320px,calc(100% - 64px));padding-top:18px}
+html[data-portfolio-theme="tijdschrift"] .hero{
+  min-height:520px;
+  border-radius:0;
+  grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+  background:#e8e2d6;
+  border:0;
+  border-top:6px solid #24483f;
+  padding:clamp(34px,5vw,72px);
+  box-shadow:none;
+}
+html[data-portfolio-theme="tijdschrift"] .hero h2{
+  font-size:clamp(3.5rem,8vw,7.4rem);
+  letter-spacing:-.055em;
+}
+html[data-portfolio-theme="tijdschrift"] .hero-photo-card{width:min(100%,420px)}
+html[data-portfolio-theme="tijdschrift"] .photo-frame{border-radius:0;padding:0;border:0;box-shadow:none}
+html[data-portfolio-theme="tijdschrift"] .photo-frame img{border-radius:0}
+html[data-portfolio-theme="tijdschrift"] .hero-photo-card figcaption{text-align:left;margin-left:0;text-transform:uppercase;letter-spacing:.09em}
+html[data-portfolio-theme="tijdschrift"] .section{
+  border-radius:0;
+  border-width:0 0 1px 0;
+  box-shadow:none;
+  background:transparent;
+  padding:42px 0;
+  margin:0;
+}
+html[data-portfolio-theme="tijdschrift"] .section h3{font-size:clamp(1.9rem,3vw,3rem)}
+html[data-portfolio-theme="tijdschrift"] .intro-grid{grid-template-columns:.9fr 1.1fr}
+html[data-portfolio-theme="tijdschrift"] .card{border-radius:0;background:#fff;border:0;padding:26px}
+html[data-portfolio-theme="tijdschrift"] .quote-card{background:#24483f;color:#fff}
+html[data-portfolio-theme="tijdschrift"] .quote-card strong{color:#fff;font-size:2rem}
+html[data-portfolio-theme="tijdschrift"] .journey{grid-template-columns:repeat(3,minmax(0,1fr))}
+html[data-portfolio-theme="tijdschrift"] .journey-card{border-radius:0;background:#fff;border:0;min-height:205px}
+html[data-portfolio-theme="tijdschrift"] .topic-list{margin-left:0;gap:1px;background:#d8dcda}
+html[data-portfolio-theme="tijdschrift"] .topic-card{
+  border-radius:0;
+  border:0;
+  background:#fff;
+  padding:24px;
+}
+html[data-portfolio-theme="tijdschrift"] .portfolio-group:before{display:none}
+
+/* 4. Dagboek — warm, persoonlijk en meer verticaal */
+html[data-portfolio-theme="dagboek"]{
+  --forest:#744f45;
+  --forest-2:#9b6b5d;
+  --leaf:#b79371;
+  --sand:#f0dcc6;
+  --cream:#fbf3e9;
+  --ink:#3b2d29;
+  --muted:#7e6b64;
+  --line:#ead8c8;
+  --shadow:0 14px 36px rgba(94,62,48,.10);
+  --radius:26px;
+  --sidebar:260px;
+}
+html[data-portfolio-theme="dagboek"] body{
+  background:
+    radial-gradient(circle at 85% 8%,rgba(196,139,112,.10),transparent 28%),
+    #fbf3e9;
+}
+html[data-portfolio-theme="dagboek"] .sidebar{
+  background:linear-gradient(180deg,#68463d,#7d5549);
+}
+html[data-portfolio-theme="dagboek"] main{width:min(960px,calc(100% - 42px))}
+html[data-portfolio-theme="dagboek"] .hero{
+  grid-template-columns:1fr;
+  min-height:0;
+  padding:52px;
+  background:#f3dfcd;
+  border:0;
+  border-radius:34px 34px 80px 34px;
+}
+html[data-portfolio-theme="dagboek"] .hero-copy{max-width:780px}
+html[data-portfolio-theme="dagboek"] .hero h2{font-size:clamp(3.1rem,8vw,6.2rem)}
+html[data-portfolio-theme="dagboek"] .hero-photo-card{
+  justify-self:start;
+  width:min(100%,520px);
+  display:grid;
+  grid-template-columns:200px 1fr;
+  align-items:end;
+  gap:18px;
+}
+html[data-portfolio-theme="dagboek"] .photo-frame{
+  transform:rotate(-2deg);
+  border-radius:8px;
+  padding:10px 10px 34px;
+  box-shadow:0 12px 25px rgba(91,59,45,.14);
+}
+html[data-portfolio-theme="dagboek"] .photo-frame img{border-radius:3px}
+html[data-portfolio-theme="dagboek"] .hero-photo-card figcaption{
+  text-align:left;
+  font-family:Georgia,serif;
+  font-size:1rem;
+  font-style:italic;
+  margin:0 0 18px;
+}
+html[data-portfolio-theme="dagboek"] .trail{opacity:.13;right:35px;top:30px}
+html[data-portfolio-theme="dagboek"] .section{
+  border:0;
+  background:rgba(255,252,247,.88);
+  border-radius:28px;
+  box-shadow:0 9px 28px rgba(94,62,48,.06);
+  padding:36px;
+  margin:24px 0;
+}
+html[data-portfolio-theme="dagboek"] .section-num,
+html[data-portfolio-theme="dagboek"] .section-icon{background:#f0ded1;color:#744f45;border-radius:50%}
+html[data-portfolio-theme="dagboek"] .intro-grid,
+html[data-portfolio-theme="dagboek"] .journey,
+html[data-portfolio-theme="dagboek"] .topic-list{grid-template-columns:1fr}
+html[data-portfolio-theme="dagboek"] .journey-card{
+  min-height:0;
+  border:0;
+  border-bottom:1px dashed #dcc3b2;
+  border-radius:0;
+  background:transparent;
+  padding-top:20px;
+  padding-bottom:20px;
+}
+html[data-portfolio-theme="dagboek"] .topic-list{margin-left:0}
+html[data-portfolio-theme="dagboek"] .topic-card{
+  min-height:0;
+  border:0;
+  border-radius:18px;
+  background:#fffaf5;
+  box-shadow:inset 4px 0 0 #d8b49d;
+}
+html[data-portfolio-theme="dagboek"] .portfolio-group:before{display:none}
+
+/* 5. Minimal — helder, zakelijk en lineair */
+html[data-portfolio-theme="minimal"]{
+  --forest:#1d4337;
+  --forest-2:#1d4337;
+  --leaf:#6f8f82;
+  --sand:#f1f1ed;
+  --cream:#ffffff;
+  --ink:#161c1a;
+  --muted:#737b78;
+  --line:#d9dedb;
+  --shadow:none;
+  --radius:0px;
+  --sidebar:178px;
+}
+html[data-portfolio-theme="minimal"] body{background:#fff}
+html[data-portfolio-theme="minimal"] .sidebar{
+  background:#f5f6f4;
+  color:#1e2a26;
+  border-right:1px solid #dce1de;
+  padding-left:12px;
+  padding-right:12px;
+}
+html[data-portfolio-theme="minimal"] .brand{border-color:#dce1de}
+html[data-portfolio-theme="minimal"] .brand-kicker{color:#62716b;opacity:1}
+html[data-portfolio-theme="minimal"] .brand h1{font-family:inherit;font-size:1.2rem}
+html[data-portfolio-theme="minimal"] .brand p,
+html[data-portfolio-theme="minimal"] .side-foot{color:#77827d}
+html[data-portfolio-theme="minimal"] .nav a,
+html[data-portfolio-theme="minimal"] .settings-nav button{
+  color:#53605b;
+  padding-left:7px;
+  padding-right:7px;
+  border-radius:4px;
+}
+html[data-portfolio-theme="minimal"] .nav a:hover,
+html[data-portfolio-theme="minimal"] .nav a.active,
+html[data-portfolio-theme="minimal"] .settings-nav button:hover{
+  background:#e9eeeb;
+  color:#183d31;
+  transform:none;
+}
+html[data-portfolio-theme="minimal"] .nav .n,
+html[data-portfolio-theme="minimal"] .settings-nav .n{
+  background:transparent;
+  width:22px;
+}
+html[data-portfolio-theme="minimal"] .settings-nav,
+html[data-portfolio-theme="minimal"] .side-foot{border-color:#dce1de}
+html[data-portfolio-theme="minimal"] .topbar{
+  background:rgba(255,255,255,.96);
+  border-color:#e3e6e4;
+}
+html[data-portfolio-theme="minimal"] main{width:min(1040px,calc(100% - 56px))}
+html[data-portfolio-theme="minimal"] .hero{
+  min-height:390px;
+  border-radius:0;
+  border:0;
+  border-bottom:1px solid #d9dedb;
+  background:#fff;
+  box-shadow:none;
+  padding:42px 0;
+}
+html[data-portfolio-theme="minimal"] .hero:before,
+html[data-portfolio-theme="minimal"] .hero:after,
+html[data-portfolio-theme="minimal"] .trail{display:none}
+html[data-portfolio-theme="minimal"] .hero h2{
+  font-family:inherit;
+  font-weight:750;
+  font-size:clamp(3rem,7vw,6rem);
+  letter-spacing:-.06em;
+}
+html[data-portfolio-theme="minimal"] .eyebrow,
+html[data-portfolio-theme="minimal"] .pill{
+  border-radius:3px;
+  background:#f4f5f3;
+}
+html[data-portfolio-theme="minimal"] .photo-frame{
+  padding:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+html[data-portfolio-theme="minimal"] .photo-frame img{border-radius:0}
+html[data-portfolio-theme="minimal"] .section{
+  border:0;
+  border-bottom:1px solid #dfe3e1;
+  border-radius:0;
+  box-shadow:none;
+  margin:0;
+  padding:40px 0;
+}
+html[data-portfolio-theme="minimal"] .section h3,
+html[data-portfolio-theme="minimal"] .topic-card h4{
+  font-family:inherit;
+}
+html[data-portfolio-theme="minimal"] .section-num,
+html[data-portfolio-theme="minimal"] .section-icon{
+  border-radius:3px;
+  background:#eef2ef;
+}
+html[data-portfolio-theme="minimal"] .card,
+html[data-portfolio-theme="minimal"] .journey-card,
+html[data-portfolio-theme="minimal"] .topic-card{
+  border-radius:0;
+  box-shadow:none;
+}
+html[data-portfolio-theme="minimal"] .journey{grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#d9dedb}
+html[data-portfolio-theme="minimal"] .journey-card{border:0;background:#fff}
+html[data-portfolio-theme="minimal"] .topic-list{
+  grid-template-columns:1fr;
+  margin-left:56px;
+  gap:0;
+}
+html[data-portfolio-theme="minimal"] .topic-card{
+  min-height:0;
+  border-width:1px 0 0 0;
+  background:#fff;
+  padding:22px 0;
+}
+html[data-portfolio-theme="minimal"] .portfolio-group:before{width:2px;background:#1d4337}
+
+/* Thema-kiezer: één vaste knop bovenaan Instellingen, met een uitklapbaar palet. */
+.theme-control{
+  position:relative;
+  margin:0 0 16px;
+}
+.theme-trigger{
+  width:100%;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  border:1px solid #d7e2db;
+  border-radius:15px;
+  background:linear-gradient(135deg,#f7faf8,#eef4f0);
+  color:#24483b;
+  padding:12px 14px;
+  text-align:left;
+  cursor:pointer;
+  font:inherit;
+  box-shadow:0 7px 20px rgba(35,55,47,.05);
+}
+.theme-trigger:hover{border-color:#abc1b4}
+.theme-trigger-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:grid;place-items:center;
+  background:#1f5e4a;color:#fff;font-size:1.08rem;
+}
+.theme-trigger-copy{min-width:0}
+.theme-trigger-copy strong{display:block;font-size:.92rem}
+.theme-trigger-copy span{display:block;color:#69776f;font-size:.75rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.theme-trigger-arrow{font-size:1.05rem;transition:transform .18s ease}
+.theme-control.open .theme-trigger-arrow{transform:rotate(180deg)}
+.theme-palette{
+  display:none;
+  margin-top:8px;
+  padding:10px;
+  border:1px solid #dce5df;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 18px 46px rgba(20,43,34,.15);
+}
+.theme-control.open .theme-palette{display:grid}
+.theme-palette-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.theme-choice{
+  border:1px solid #e0e6e2;
+  border-radius:13px;
+  background:#fff;
+  padding:8px;
+  text-align:left;
+  cursor:pointer;
+  font:inherit;
+  min-width:0;
+}
+.theme-choice:hover{border-color:#a9bdb1;background:#fafcfb}
+.theme-choice.active{border-color:#1f5e4a;box-shadow:0 0 0 2px rgba(31,94,74,.10)}
+.theme-preview{
+  height:70px;
+  border-radius:9px;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:22% 1fr;
+  margin-bottom:7px;
+  border:1px solid rgba(0,0,0,.07);
+}
+.theme-preview i{display:block}
+.theme-preview-main{padding:8px;display:grid;gap:5px}
+.theme-preview-line{height:5px;border-radius:9px;background:currentColor;opacity:.25}
+.theme-preview-card{height:24px;border:1px solid currentColor;opacity:.22}
+.theme-choice strong{display:block;font-size:.75rem;line-height:1.15}
+.theme-choice small{display:block;color:#7a8780;font-size:.63rem;line-height:1.25;margin-top:3px}
+.theme-preview.natuurlijk{background:#fbfaf6;color:#1f5e4a}.theme-preview.natuurlijk>i{background:#1f5e4a}
+.theme-preview.wandelgids{background:#f4efe4;color:#315c45}.theme-preview.wandelgids>i{background:#e8dfca}
+.theme-preview.tijdschrift{background:#f5f3ee;color:#24483f;grid-template-columns:1fr;grid-template-rows:15px 1fr}.theme-preview.tijdschrift>i{background:#172b27}
+.theme-preview.dagboek{background:#fbf3e9;color:#744f45}.theme-preview.dagboek>i{background:#744f45}
+.theme-preview.minimal{background:#fff;color:#1d4337}.theme-preview.minimal>i{background:#f0f2f0}
+.theme-save-state{margin:8px 2px 0;color:#6c7972;font-size:.72rem;min-height:1.1em}
+
+/* Responsieve correcties voor de alternatieve composities */
+@media(max-width:980px){
+  html[data-portfolio-theme="tijdschrift"] .sidebar{
+    position:fixed!important;
+    left:0;top:0;width:min(330px,88vw);height:100vh!important;
+    display:flex!important;
+    flex-direction:column!important;
+    padding:22px 18px;
+    transform:translateX(-105%);
+    overflow:auto;
+  }
+  html[data-portfolio-theme="tijdschrift"] body.menu-open .sidebar{transform:translateX(0)}
+  html[data-portfolio-theme="tijdschrift"] .brand{padding:12px 10px 18px;border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:14px}
+  html[data-portfolio-theme="tijdschrift"] .brand-kicker,
+  html[data-portfolio-theme="tijdschrift"] .brand p{display:block}
+  html[data-portfolio-theme="tijdschrift"] .brand h1{font-size:1.55rem;margin:8px 0 5px}
+  html[data-portfolio-theme="tijdschrift"] .nav{flex-direction:column;align-items:stretch;padding:4px 0 22px;overflow:visible}
+  html[data-portfolio-theme="tijdschrift"] .nav a{grid-template-columns:30px 1fr;font-size:.86rem;border-radius:12px}
+  html[data-portfolio-theme="tijdschrift"] .nav .n{display:grid}
+  html[data-portfolio-theme="tijdschrift"] .nav-divider{width:auto;height:1px;margin:9px 8px}
+  html[data-portfolio-theme="tijdschrift"] .side-foot{display:block}
+  html[data-portfolio-theme="tijdschrift"] .settings-nav{margin-top:auto;padding:10px 0 4px;border-top:1px solid rgba(255,255,255,.14)}
+  html[data-portfolio-theme="tijdschrift"] .settings-nav button{grid-template-columns:30px 1fr}
+  html[data-portfolio-theme="tijdschrift"] .settings-nav .n{display:grid}
+  html[data-portfolio-theme="tijdschrift"] .topbar{position:sticky;top:0;padding:10px 16px}
+  html[data-portfolio-theme="wandelgids"] .hero{grid-template-columns:1fr}
+  html[data-portfolio-theme="wandelgids"] .hero-copy{order:1}
+  html[data-portfolio-theme="wandelgids"] .hero-photo-card{order:2;width:min(100%,360px)}
+  html[data-portfolio-theme="dagboek"] .hero-photo-card{grid-template-columns:1fr;width:min(100%,360px)}
+  .theme-palette-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  html[data-portfolio-theme="tijdschrift"] main,
+  html[data-portfolio-theme="wandelgids"] main,
+  html[data-portfolio-theme="minimal"] main{width:min(100% - 24px,1180px)}
+  html[data-portfolio-theme="tijdschrift"] .journey{grid-template-columns:1fr}
+  html[data-portfolio-theme="tijdschrift"] .hero{padding:28px 22px}
+  html[data-portfolio-theme="dagboek"] .hero{padding:30px 22px;border-radius:24px}
+  html[data-portfolio-theme="dagboek"] .section{padding:22px 17px;border-radius:20px}
+  html[data-portfolio-theme="minimal"] .hero{padding:30px 0}
+  html[data-portfolio-theme="minimal"] .topic-list{margin-left:0}
+  html[data-portfolio-theme="minimal"] .journey{grid-template-columns:1fr}
+  .theme-palette-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .theme-choice:last-child{grid-column:1/-1}
+}
