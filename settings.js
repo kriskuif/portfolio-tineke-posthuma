@@ -232,13 +232,87 @@
     return `<article class="topic"><div class="topic-label">Onderdeel ${number}</div><h3>${esc(topic.title)}</h3>${body}</article>`;
   }
 
+  function exportThemeProfile(){
+    const id = window.PortfolioThemes?.current?.() || document.documentElement.dataset.portfolioTheme || 'natuurlijk';
+    const profiles = {
+      natuurlijk:{
+        id:'natuurlijk',name:'Natuurlijk',
+        bg:'#fbfaf6',paper:'#ffffff',ink:'#1d2924',muted:'#66746e',line:'#dfe5df',
+        accent:'#1f5e4a',accentSoft:'#e6efe9',heroA:'#f1ead8',heroB:'#eaf0e7',
+        bodyFont:'Arial, sans-serif',titleFont:'Georgia, serif',
+        pattern:'radial-gradient(circle at 88% 14%, rgba(135,170,111,.12) 0 8%, transparent 8.5%)'
+      },
+      wandelgids:{
+        id:'wandelgids',name:'Bos & Blad',
+        bg:'#f4f2e9',paper:'#fffefa',ink:'#243028',muted:'#6c776e',line:'#d8ded3',
+        accent:'#284f36',accentSoft:'#dfe9da',heroA:'#ece7d4',heroB:'#e5ecdf',
+        bodyFont:'Trebuchet MS, Arial, sans-serif',titleFont:'Palatino Linotype, Georgia, serif',
+        pattern:'radial-gradient(ellipse at 88% 18%, rgba(86,118,73,.15) 0 7%, transparent 7.5%), radial-gradient(ellipse at 18% 82%, rgba(162,145,99,.10) 0 9%, transparent 9.5%)'
+      },
+      tijdschrift:{
+        id:'tijdschrift',name:'Herfstpad',
+        bg:'#fbf4ea',paper:'#fffdfa',ink:'#3b2923',muted:'#806b60',line:'#ead7ca',
+        accent:'#944f38',accentSoft:'#f3ddd0',heroA:'#f4dfc8',heroB:'#f2d4bd',
+        bodyFont:'Arial, sans-serif',titleFont:'Georgia, serif',
+        pattern:'radial-gradient(ellipse at 88% 20%, rgba(188,104,63,.16) 0 10%, transparent 10.5%), radial-gradient(ellipse at 78% 92%, rgba(215,166,79,.20) 0 14%, transparent 14.5%)'
+      },
+      dagboek:{
+        id:'dagboek',name:'Routekaart',
+        bg:'#f3f7f7',paper:'#ffffff',ink:'#1f3035',muted:'#65777c',line:'#d4e0e2',
+        accent:'#28586a',accentSoft:'#dcebed',heroA:'#e5eeee',heroB:'#dfeaed',
+        bodyFont:'Segoe UI, Tahoma, sans-serif',titleFont:'Trebuchet MS, Segoe UI, sans-serif',
+        pattern:'repeating-radial-gradient(ellipse at 88% 22%, transparent 0 22px, rgba(49,104,120,.07) 23px 24px, transparent 25px 42px)'
+      },
+      minimal:{
+        id:'minimal',name:'Duin & Zee',
+        bg:'#f8f5ed',paper:'#fffefb',ink:'#24323a',muted:'#6b797e',line:'#d9e1df',
+        accent:'#245b78',accentSoft:'#dfecef',heroA:'#f6ebd5',heroB:'#dfeef1',
+        bodyFont:'Verdana, Geneva, sans-serif',titleFont:'Palatino Linotype, Georgia, serif',
+        pattern:'radial-gradient(ellipse at 88% 12%, rgba(91,158,183,.16) 0 13%, transparent 13.5%), radial-gradient(ellipse at 78% 100%, rgba(217,191,130,.20) 0 18%, transparent 18.5%)'
+      }
+    };
+    return profiles[id] || profiles.natuurlijk;
+  }
+
   async function buildExportDocument(){
     const imageData = await imageAsDataUrl();
+    const theme = exportThemeProfile();
     const chapters = groups.map(group => `<section class="chapter"><div class="chapter-head"><span>${group.n}</span><div><h2>${esc(group.title)}</h2><p>${esc(group.sub)}</p></div></div>${group.topics.map((topic,index)=>topicHtml(topic,`${group.n}.${index+1}`)).join('')}</section>`).join('');
     const photo = imageData ? `<img class="portrait" src="${imageData}" alt="Tineke Posthuma">` : '';
-    return `<!DOCTYPE html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio Tineke Posthuma · Wandeltrainer 3</title><style>
-      @page{margin:18mm}*{box-sizing:border-box}body{margin:0;background:#fbfaf6;color:#1d2924;font-family:Arial,sans-serif;line-height:1.55}.page{max-width:900px;margin:auto;padding:34px}.cover{display:grid;grid-template-columns:1fr 230px;gap:32px;align-items:center;padding:34px;border:1px solid #dedfd6;border-radius:24px;background:#f3eee1;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#1f5e4a}.cover h1{font-family:Georgia,serif;font-size:52px;line-height:.95;margin:12px 0}.cover h1 span{color:#1f5e4a}.cover p{color:#526158}.portrait{width:100%;border-radius:18px;border:8px solid #fff}.intro,.chapter{background:#fff;border:1px solid #dfe5df;border-radius:20px;padding:24px;margin:16px 0}.intro h2,.chapter h2,.topic h3{font-family:Georgia,serif}.intro h2{margin-top:0}.chapter-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px}.chapter-head>span{display:grid;place-items:center;min-width:40px;height:40px;background:#e6efe9;color:#1f5e4a;border-radius:12px;font-weight:700}.chapter-head h2{margin:0 0 3px}.chapter-head p{margin:0;color:#66746e}.topic{border-top:1px solid #e7ece8;padding:18px 0 6px}.topic-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#75857c;font-weight:700}.topic h3{margin:4px 0 12px;color:#294f40}.field{margin:10px 0;padding-left:12px;border-left:3px solid #dbe7df}.field h4{margin:0 0 3px;font-size:12px;color:#446054}.field p{margin:0;color:#405047}.empty{color:#8a948f;font-style:italic}footer{text-align:center;color:#66746e;font-size:12px;margin:28px 0}@media print{body{background:#fff}.page{padding:0}.cover,.intro,.chapter,.topic{break-inside:avoid}}@media(max-width:650px){.page{padding:15px}.cover{grid-template-columns:1fr}.cover h1{font-size:42px}.portrait{max-width:260px}}
-    </style></head><body><div class="page"><header class="cover"><div><div class="eyebrow">Portfolio · Wandeltrainer 3</div><h1>Tineke <span>Posthuma</span></h1><p>Een persoonlijk portfolio over mijn ontwikkeling als wandeltrainer, met praktijkervaringen, trainingsplannen, feedback, reflecties en bewijsstukken.</p></div>${photo}</header><section class="intro"><h2>Over dit portfolio</h2><p>Deze website is opgezet als digitaal portfolio voor Wandeltrainer 3. Hier komen de persoonlijke teksten, praktijkvoorbeelden, trainingsplannen, reflecties en bewijsstukken van Tineke samen in één overzichtelijk geheel.</p></section>${chapters}<footer>Portfolio Tineke Posthuma · Wandeltrainer 3</footer></div></body></html>`;
+    return `<!DOCTYPE html><html lang="nl" data-portfolio-theme="${theme.id}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio Tineke Posthuma · Wandeltrainer 3</title><style>
+      @page{margin:18mm}
+      *{box-sizing:border-box}
+      html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      body{margin:0;background:${theme.bg};color:${theme.ink};font-family:${theme.bodyFont};line-height:1.55}
+      .page{max-width:900px;margin:auto;padding:34px}
+      .cover{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr 230px;gap:32px;align-items:center;padding:34px;border:1px solid ${theme.line};border-radius:24px;background:${theme.pattern},linear-gradient(135deg,${theme.heroA},${theme.heroB});margin-bottom:24px}
+      .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:${theme.accent}}
+      .theme-label{display:inline-block;margin-top:8px;padding:4px 8px;border-radius:999px;background:${theme.accentSoft};color:${theme.accent};font-size:10px;font-weight:700}
+      .cover h1{font-family:${theme.titleFont};font-size:52px;line-height:.95;margin:12px 0}
+      .cover h1 span{color:${theme.accent}}
+      .cover p{color:${theme.muted}}
+      .portrait{width:100%;border-radius:18px;border:8px solid ${theme.paper}}
+      .intro,.chapter{background:${theme.paper};border:1px solid ${theme.line};border-radius:20px;padding:24px;margin:16px 0}
+      .intro h2,.chapter h2,.topic h3{font-family:${theme.titleFont}}
+      .intro h2{margin-top:0}
+      .chapter-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px}
+      .chapter-head>span{display:grid;place-items:center;min-width:40px;height:40px;background:${theme.accentSoft};color:${theme.accent};border-radius:12px;font-weight:700}
+      .chapter-head h2{margin:0 0 3px}.chapter-head p{margin:0;color:${theme.muted}}
+      .topic{border-top:1px solid ${theme.line};padding:18px 0 6px}
+      .topic-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:${theme.muted};font-weight:700}
+      .topic h3{margin:4px 0 12px;color:${theme.accent}}
+      .field{margin:10px 0;padding-left:12px;border-left:3px solid ${theme.accentSoft}}
+      .field h4{margin:0 0 3px;font-size:12px;color:${theme.accent}}
+      .field p{margin:0;color:${theme.ink}}
+      .empty{color:${theme.muted};font-style:italic}
+      footer{text-align:center;color:${theme.muted};font-size:12px;margin:28px 0}
+      @media print{
+        body{background:${theme.bg}!important}
+        .page{padding:0}
+        .cover,.intro,.chapter,.topic{break-inside:avoid}
+      }
+      @media(max-width:650px){.page{padding:15px}.cover{grid-template-columns:1fr}.cover h1{font-size:42px}.portrait{max-width:260px}}
+    </style></head><body><div class="page"><header class="cover"><div><div class="eyebrow">Portfolio · Wandeltrainer 3</div><h1>Tineke <span>Posthuma</span></h1><p>Een persoonlijk portfolio over mijn ontwikkeling als wandeltrainer, met praktijkervaringen, trainingsplannen, feedback, reflecties en bewijsstukken.</p><span class="theme-label">Thema: ${esc(theme.name)}</span></div>${photo}</header><section class="intro"><h2>Over dit portfolio</h2><p>Deze website is opgezet als digitaal portfolio voor Wandeltrainer 3. Hier komen de persoonlijke teksten, praktijkvoorbeelden, trainingsplannen, reflecties en bewijsstukken van Tineke samen in één overzichtelijk geheel.</p></section>${chapters}<footer>Portfolio Tineke Posthuma · Wandeltrainer 3</footer></div></body></html>`;
   }
 
   async function openSettings(){
@@ -391,7 +465,7 @@
 
     const maintenance=overlay.querySelector('[data-maintenance-message]');
     overlay.querySelector('[data-export-json]')?.addEventListener('click',()=>{
-      const payload={schema_version:1,exported_at:new Date().toISOString(),portfolio:'Tineke Posthuma - Wandeltrainer 3',values:state.values};
+      const payload={schema_version:1,exported_at:new Date().toISOString(),portfolio:'Tineke Posthuma - Wandeltrainer 3',theme:(window.PortfolioThemes?.current?.()||document.documentElement.dataset.portfolioTheme||'natuurlijk'),values:state.values};
       downloadBlob(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),'portfolio-tineke-posthuma-backup.json');
       maintenance.textContent='JSON-back-up gedownload.';
     });
