@@ -376,10 +376,10 @@ html[data-portfolio-theme="minimal"] .theme-symbol-shell-small{
   position:absolute;
   width:50%;
   height:50%;
-  left:-30%;
+  left:-68%;
   top:58%;
   opacity:.10;
-  transform:rotate(-20deg);
+  transform:rotate(-40deg);
   transform-origin:50% 55%;
 }
 
