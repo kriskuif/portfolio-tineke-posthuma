@@ -270,10 +270,15 @@ html[data-portfolio-theme="minimal"]{
 }
 html[data-portfolio-theme="minimal"] body{
   font-family:Verdana,Geneva,sans-serif;
-  background:
+  background-color:#f8f5ed;
+  background-image:
+    url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20600%20180%22%3E%0A%20%20%3Cg%20fill%3D%22none%22%20stroke%3D%22%235f9fb4%22%20stroke-linecap%3D%22round%22%3E%0A%20%20%20%20%3Cpath%20d%3D%22M0%2048%20C75%2018%20150%2018%20225%2048%20S375%2078%20450%2048%20S525%2018%20600%2048%22%20stroke-width%3D%222.2%22%20opacity%3D%22.13%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M0%2092%20C75%2062%20150%2062%20225%2092%20S375%20122%20450%2092%20S525%2062%20600%2092%22%20stroke-width%3D%221.8%22%20opacity%3D%22.09%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M0%20136%20C75%20106%20150%20106%20225%20136%20S375%20166%20450%20136%20S525%20106%20600%20136%22%20stroke-width%3D%221.5%22%20opacity%3D%22.07%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%3C%2Fsvg%3E"),
     radial-gradient(ellipse at 18% 0%,rgba(97,159,183,.10) 0 12%,transparent 12.4%),
     radial-gradient(ellipse at 78% 0%,rgba(97,159,183,.07) 0 10%,transparent 10.4%),
     linear-gradient(180deg,#eef6f7 0,#f8f5ed 220px,#f8f5ed 100%);
+  background-size:600px 180px,auto,auto,auto;
+  background-repeat:repeat,no-repeat,no-repeat,no-repeat;
+  background-position:0 20px,center top,center top,center top;
 }
 html[data-portfolio-theme="minimal"] .sidebar{
   background:linear-gradient(180deg,#17445d,#245b78 52%,#1b4b63);
