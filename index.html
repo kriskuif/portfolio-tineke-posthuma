@@ -6,7 +6,19 @@
   <meta name="theme-color" content="#1f5e4a">
   <meta name="description" content="Portfolio Wandeltrainer 3 van Tineke Posthuma.">
   <title>Portfolio Tineke Posthuma · Wandeltrainer 3</title>
-  <link rel="stylesheet" href="styles.css?v=20260918-tabs-removed">
+  <script>
+    (() => {
+      try{
+        const allowed=['natuurlijk','wandelgids','tijdschrift','dagboek','minimal'];
+        const saved=localStorage.getItem('portfolio-tineke-theme-v1');
+        document.documentElement.dataset.portfolioTheme=allowed.includes(saved)?saved:'natuurlijk';
+      }catch(_err){
+        document.documentElement.dataset.portfolioTheme='natuurlijk';
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css?v=20260918-themes">
+  <link rel="stylesheet" href="themes.css?v=20260918-1">
 </head>
 <body>
 <div class="app">
@@ -88,6 +100,7 @@
 <script src="supabase-sync.js?v=20260914-1331"></script>
 <script src="settings.js?v=20260914-1331"></script>
 <script src="settings-layout-polish.js?v=20260914-2055"></script>
+<script src="themes.js?v=20260918-1"></script>
 <script src="admin-account.js?v=20260914-2020"></script>
 <script src="profile-photo.js?v=20260918-no-photo-flash"></script>
 <script src="export-admin-privacy.js?v=20260914-1935"></script>
