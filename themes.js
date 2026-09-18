@@ -12,23 +12,23 @@
     },
     {
       id:'wandelgids',
-      name:'Wandelgids',
-      description:'Warm papier, foto links en een lineaire veldgids.'
+      name:'Bos & Blad',
+      description:'Diepgroen, mos en bladstructuren met klassieke typografie.'
     },
     {
       id:'tijdschrift',
-      name:'Tijdschrift',
-      description:'Brede editorial lay-out met horizontale navigatie.'
+      name:'Herfstpad',
+      description:'Roest, koper en goud met een warme herfstachtige sfeer.'
     },
     {
       id:'dagboek',
-      name:'Dagboek',
-      description:'Persoonlijk, warm en verticaal met zachte vormen.'
+      name:'Routekaart',
+      description:'Koel blauwgroen met topografische lijnen en moderne typografie.'
     },
     {
       id:'minimal',
-      name:'Minimal',
-      description:'Helder en zakelijk met veel witruimte en strakke lijnen.'
+      name:'Duin & Zee',
+      description:'Zand, lucht en zeeblauw met een lichte kustsfeer.'
     }
   ];
   const allowed = new Set(themes.map(theme => theme.id));
@@ -132,7 +132,7 @@
             </button>
           `).join('')}
         </div>
-        <div class="theme-save-state" data-theme-state>Kies een thema; de wijziging wordt direct voor het openbare portfolio opgeslagen.</div>
+        <div class="theme-save-state" data-theme-state>Kies een stijl; de basislay-out blijft hetzelfde en alleen de visuele sfeer verandert.</div>
       </div>
     `;
     body.insertBefore(control,body.firstChild);
