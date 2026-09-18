@@ -141,66 +141,6 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:26px}
 body.window-dragging{user-select:none;cursor:move}
 
 
-/* Multomap-index: hoofdstuktabs aan de linkerzijde van elk hoofdstukvlak. */
-.binder-tabs{
-  position:absolute;
-  left:-48px;
-  top:28px;
-  z-index:3;
-  display:flex;
-  flex-direction:column;
-  gap:7px;
-  align-items:flex-end;
-}
-.binder-tab{
-  position:relative;
-  display:grid;
-  place-items:center;
-  width:48px;
-  height:34px;
-  padding:0 8px 0 6px;
-  border:1px solid var(--line);
-  border-right:0;
-  border-radius:11px 0 0 11px;
-  background:#fff;
-  color:#7a8981;
-  text-decoration:none;
-  font-size:.69rem;
-  font-weight:850;
-  letter-spacing:.04em;
-  box-shadow:-7px 6px 16px rgba(35,55,47,.045);
-  transition:width .16s ease,transform .16s ease,color .16s ease,box-shadow .16s ease;
-}
-.binder-tab::after{
-  content:"";
-  position:absolute;
-  right:-1px;
-  top:0;
-  bottom:0;
-  width:2px;
-  background:#fff;
-}
-.binder-tab:hover{
-  width:54px;
-  color:var(--forest);
-  box-shadow:-9px 7px 18px rgba(35,55,47,.075);
-}
-.binder-tab.active{
-  width:60px;
-  color:var(--forest);
-  font-weight:950;
-  box-shadow:-10px 8px 20px rgba(35,55,47,.10),inset 4px 0 0 var(--forest);
-}
-.binder-tab.active::before{
-  content:"";
-  position:absolute;
-  right:8px;
-  width:5px;
-  height:5px;
-  border-radius:50%;
-  background:var(--forest);
-}
-
 @media(max-width:980px){
   .app{grid-template-columns:1fr}
   .sidebar{position:fixed;left:0;top:0;width:min(330px,88vw);transform:translateX(-105%);transition:.22s ease;box-shadow:12px 0 40px rgba(0,0,0,.2)}
@@ -210,25 +150,6 @@ body.window-dragging{user-select:none;cursor:move}
   .hero-photo-card{justify-self:start;width:min(100%,360px)}
   .intro-grid{grid-template-columns:1fr}
   .topic-list{margin-left:0}
-  .binder-tabs{
-    position:static;
-    flex-direction:row;
-    flex-wrap:wrap;
-    align-items:center;
-    gap:6px;
-    margin:-4px 0 18px 56px;
-  }
-  .binder-tab,.binder-tab:hover,.binder-tab.active{
-    width:42px;
-    height:32px;
-    border-right:1px solid var(--line);
-    border-radius:10px;
-    box-shadow:none;
-    transform:none;
-  }
-  .binder-tab::after{display:none}
-  .binder-tab.active{box-shadow:inset 0 -3px 0 var(--forest)}
-  .binder-tab.active::before{display:none}
 }
 @media(max-width:700px){
   main{width:min(100% - 24px,1180px);padding-top:14px}
