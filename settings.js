@@ -278,7 +278,7 @@
   function exportThemeMotif(id){
     if(id==='wandelgids'){
       const tree=document.querySelector('.theme-symbol-tree');
-      return tree ? tree.outerHTML.replace('theme-symbol theme-symbol-tree','export-motif') : '';
+      return tree ? tree.outerHTML.replace('theme-symbol theme-symbol-tree','export-motif export-tree') : '';
     }
     if(id==='tijdschrift') return `<svg class="export-motif" aria-hidden="true" viewBox="0 0 220 220">
       <path d="M46.4 10 L47.3 55.8 L43.3 60.7 L33.1 57.1 L58.9 87.8 L51.3 90.4 L34 81.1 L25.1 88.7 L10 82 L21.6 94.4 L21.6 102.4 L31.3 108.7 L28.7 116.7 L43.3 126.4 L66.4 128.7 L71.8 134.9 L38.4 134.9 L37.1 144.2 L14.4 154 L42 166 L45.1 172.7 L41.1 176.7 L50 178.9 L82.9 169.1 L83.8 175.3 L64.2 196.7 L74 193.1 L99.3 199.3 L111.3 180.7 L120.2 189.1 L136.7 166.4 L138.9 154 L172.2 191.8 L173.6 185.6 L142.9 152.7 L173.1 155.8 L173.6 147.8 L190.9 145.1 L205.1 133.1 L182.4 128.7 L180.2 123.8 L202 112.7 L209.6 102.4 L202.9 95.3 L207.8 57.6 L200.7 67.3 L185.1 74 L180.7 70 L165.6 87.8 L158.4 89.1 L161.6 65.6 L154.4 45.6 L156.2 31.8 L145.6 41.6 L125.1 16.2 L127.3 35.8 L125.1 42.4 L119.8 41.6 L122 75.8 L117.6 77.1 L110.4 61.1 L113.1 40.7 L106.9 43.8 L98.4 34.4 L89.6 39.3 L79.8 30 L61.1 24.7 Z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -321,6 +321,7 @@
       .cover{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr 230px;gap:32px;align-items:center;padding:34px;border:1px solid ${theme.line};border-radius:24px;background:${theme.pattern},linear-gradient(135deg,${theme.heroA},${theme.heroB});margin-bottom:24px}
       .cover>div,.portrait{position:relative;z-index:2}
       .export-motif,.export-route{position:absolute;right:245px;top:22px;width:190px;height:190px;color:${theme.accent};opacity:.11;z-index:1}
+      .export-tree{width:266px;height:266px;right:265px;top:-8px}
       .export-shell-main{transform:rotate(-12deg)!important;transform-origin:center}
       .export-shell-small{width:95px;height:95px;right:473px;top:124px;opacity:.09;transform:rotate(-40deg)!important;transform-origin:center}
       .export-route{width:230px;height:190px;right:230px;top:28px;opacity:.23}
