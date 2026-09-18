@@ -28,7 +28,9 @@
   manageBtn.className = 'manage-btn';
   manageBtn.type = 'button';
   manageBtn.textContent = 'Beheer';
-  topbar?.appendChild(manageBtn);
+  const topbarStatus = topbar?.querySelector('.status');
+  if (topbarStatus) topbarStatus.insertAdjacentElement('afterend', manageBtn);
+  else topbar?.appendChild(manageBtn);
 
   let currentSession = null;
   let canEdit = false;
