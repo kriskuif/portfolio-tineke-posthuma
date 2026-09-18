@@ -358,7 +358,7 @@ html[data-portfolio-theme] .section-icon{
   shape-rendering:geometricPrecision;
 }
 html[data-portfolio-theme="wandelgids"] .theme-symbol-tree{display:block}
-html[data-portfolio-theme="tijdschrift"] .theme-symbol-oak{display:block;opacity:.12}
+html[data-portfolio-theme="tijdschrift"] .theme-symbol-leaf{display:block;opacity:.12}
 html[data-portfolio-theme="dagboek"] .theme-symbol-compass{display:block;opacity:.11}
 html[data-portfolio-theme="minimal"] .theme-symbol-shell{display:block;opacity:.12}
 
