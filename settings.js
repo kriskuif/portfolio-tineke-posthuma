@@ -274,11 +274,21 @@
     return profiles[id] || profiles.natuurlijk;
   }
 
+  function exportThemeMotif(id){
+    const common='class="export-motif" aria-hidden="true" viewBox="0 0 200 200"';
+    if(id==='wandelgids') return `<svg ${common}><path d="M100 25c-15 0-27 9-32 22-18 0-32 14-32 32 0 15 10 27 24 31-1 3-2 7-2 10 0 19 15 34 34 34 10 0 19-4 25-11 6 5 14 8 23 8 19 0 34-15 34-34 0-14-8-26-20-31 1-4 2-8 2-12 0-18-14-32-32-32-8 0-15 3-21 8-5-15-19-25-35-25z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/><path d="M100 168V108M100 136L75 113M100 125L126 101M100 151L126 132" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="5"/></svg>`;
+    if(id==='tijdschrift') return `<svg ${common}><path d="M105 179c-3-19-7-35-13-50-12 7-26 4-33-7 12-4 17-13 11-24 14 2 23-5 20-17 14 5 25-2 24-16 12 7 22 2 27-10 8 12 10 25 7 37 13-3 24 4 25 16 13 0 23 8 24 20-13-2-23 5-27 17-11-6-23-2-30 8-9-7-19-6-27 1-3 8-5 16-6 25" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/><path d="M106 177c5-27 14-55 31-87M112 151l-23-13M119 128l25 2M126 108l-17-15M134 91l14-10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="4"/></svg>`;
+    if(id==='dagboek') return `<svg ${common}><circle cx="100" cy="100" r="58" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="100" cy="100" r="10" fill="none" stroke="currentColor" stroke-width="3"/><path d="M100 22L111 88L100 100L89 88Z M178 100L112 111L100 100L112 89Z M100 178L89 112L100 100L111 112Z M22 100L88 89L100 100L88 111Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"/></svg>`;
+    if(id==='minimal') return `<svg ${common}><path d="M100 177C69 165 45 143 37 116C28 86 42 57 68 43C78 37 89 34 100 34C111 34 122 37 132 43C158 57 172 86 163 116C155 143 131 165 100 177Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="5"/><path d="M100 176L60 62M100 176L79 43M100 176V35M100 176L121 43M100 176L140 62M100 176L49 88M100 176L151 88" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3.5"/></svg>`;
+    return `<svg class="export-route" aria-hidden="true" viewBox="0 0 280 230"><path d="M20 210C70 177 116 190 101 145C88 105 35 125 58 82C82 37 150 90 178 52C199 24 232 16 258 28" fill="none" stroke="currentColor" stroke-dasharray="2 16" stroke-linecap="round" stroke-width="7"/><circle cx="20" cy="210" r="7" fill="currentColor"/><path d="M245 16L266 28L249 45" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/></svg>`;
+  }
+
   async function buildExportDocument(){
     const imageData = await imageAsDataUrl();
     const theme = exportThemeProfile();
     const chapters = groups.map(group => `<section class="chapter"><div class="chapter-head"><span>${group.n}</span><div><h2>${esc(group.title)}</h2><p>${esc(group.sub)}</p></div></div>${group.topics.map((topic,index)=>topicHtml(topic,`${group.n}.${index+1}`)).join('')}</section>`).join('');
     const photo = imageData ? `<img class="portrait" src="${imageData}" alt="Tineke Posthuma">` : '';
+    const motif = exportThemeMotif(theme.id);
     return `<!DOCTYPE html><html lang="nl" data-portfolio-theme="${theme.id}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio Tineke Posthuma · Wandeltrainer 3</title><style>
       @page{margin:18mm}
       *{box-sizing:border-box}
@@ -286,6 +296,9 @@
       body{margin:0;background:${theme.bg};color:${theme.ink};font-family:${theme.bodyFont};line-height:1.55}
       .page{max-width:900px;margin:auto;padding:34px}
       .cover{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr 230px;gap:32px;align-items:center;padding:34px;border:1px solid ${theme.line};border-radius:24px;background:${theme.pattern},linear-gradient(135deg,${theme.heroA},${theme.heroB});margin-bottom:24px}
+      .cover>div,.portrait{position:relative;z-index:2}
+      .export-motif,.export-route{position:absolute;right:245px;top:22px;width:190px;height:190px;color:${theme.accent};opacity:.11;z-index:1}
+      .export-route{width:230px;height:190px;right:230px;top:28px;opacity:.23}
       .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:${theme.accent}}
       .theme-label{display:inline-block;margin-top:8px;padding:4px 8px;border-radius:999px;background:${theme.accentSoft};color:${theme.accent};font-size:10px;font-weight:700}
       .cover h1{font-family:${theme.titleFont};font-size:52px;line-height:.95;margin:12px 0}
@@ -312,7 +325,7 @@
         .cover,.intro,.chapter,.topic{break-inside:avoid}
       }
       @media(max-width:650px){.page{padding:15px}.cover{grid-template-columns:1fr}.cover h1{font-size:42px}.portrait{max-width:260px}}
-    </style></head><body><div class="page"><header class="cover"><div><div class="eyebrow">Portfolio · Wandeltrainer 3</div><h1>Tineke <span>Posthuma</span></h1><p>Een persoonlijk portfolio over mijn ontwikkeling als wandeltrainer, met praktijkervaringen, trainingsplannen, feedback, reflecties en bewijsstukken.</p><span class="theme-label">Thema: ${esc(theme.name)}</span></div>${photo}</header><section class="intro"><h2>Over dit portfolio</h2><p>Deze website is opgezet als digitaal portfolio voor Wandeltrainer 3. Hier komen de persoonlijke teksten, praktijkvoorbeelden, trainingsplannen, reflecties en bewijsstukken van Tineke samen in één overzichtelijk geheel.</p></section>${chapters}<footer>Portfolio Tineke Posthuma · Wandeltrainer 3</footer></div></body></html>`;
+    </style></head><body><div class="page"><header class="cover"><div><div class="eyebrow">Portfolio · Wandeltrainer 3</div><h1>Tineke <span>Posthuma</span></h1><p>Een persoonlijk portfolio over mijn ontwikkeling als wandeltrainer, met praktijkervaringen, trainingsplannen, feedback, reflecties en bewijsstukken.</p><span class="theme-label">Thema: ${esc(theme.name)}</span></div>${photo}${motif}</header><section class="intro"><h2>Over dit portfolio</h2><p>Deze website is opgezet als digitaal portfolio voor Wandeltrainer 3. Hier komen de persoonlijke teksten, praktijkvoorbeelden, trainingsplannen, reflecties en bewijsstukken van Tineke samen in één overzichtelijk geheel.</p></section>${chapters}<footer>Portfolio Tineke Posthuma · Wandeltrainer 3</footer></div></body></html>`;
   }
 
   async function openSettings(){
