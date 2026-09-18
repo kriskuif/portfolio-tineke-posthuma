@@ -197,10 +197,10 @@ html[data-portfolio-theme="dagboek"]{
 html[data-portfolio-theme="dagboek"] body{
   font-family:"Segoe UI",Tahoma,sans-serif;
   background-color:#f3f7f7;
-  background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgo8ZyBmaWxsPSJub25lIiBzdHJva2U9IiMyODU4NmEiIHN0cm9rZS13aWR0aD0iMS42IiBvcGFjaXR5PSIuMjYiPgogIDxjaXJjbGUgY3g9IjUwMCIgY3k9IjUwMCIgcj0iNDcwIi8+CiAgPCEtLSBsYXRpdHVkZSBiYW5kcyAtLT4KICA8cGF0aCBkPSJNNzAgMzMwIEMyNjAgNDEwIDc0MCA0MTAgOTMwIDMzMCIvPgogIDxwYXRoIGQ9Ik00MCA0MjAgQzI1MCA0NzAgNzUwIDQ3MCA5NjAgNDIwIi8+CiAgPHBhdGggZD0iTTMwIDUwMCBDMjUwIDUwMCA3NTAgNTAwIDk3MCA1MDAiLz4KICA8cGF0aCBkPSJNNDAgNTgwIEMyNTAgNTMwIDc1MCA1MzAgOTYwIDU4MCIvPgogIDxwYXRoIGQ9Ik03MCA2NzAgQzI2MCA1OTAgNzQwIDU5MCA5MzAgNjcwIi8+CiAgPCEtLSBsb25naXR1ZGUgY3VydmVzIC0tPgogIDxwYXRoIGQ9Ik01MDAgMzAgQzM1NSAyMjAgMzU1IDc4MCA1MDAgOTcwIi8+CiAgPHBhdGggZD0iTTUwMCAzMCBDNjQ1IDIyMCA2NDUgNzgwIDUwMCA5NzAiLz4KICA8cGF0aCBkPSJNNTAwIDMwIEMyNDUgMjMwIDI0NSA3NzAgNTAwIDk3MCIvPgogIDxwYXRoIGQ9Ik01MDAgMzAgQzc1NSAyMzAgNzU1IDc3MCA1MDAgOTcwIi8+CiAgPHBhdGggZD0iTTUwMCAzMCBDMTQ1IDI1NSAxNDUgNzQ1IDUwMCA5NzAiLz4KICA8cGF0aCBkPSJNNTAwIDMwIEM4NTUgMjU1IDg1NSA3NDUgNTAwIDk3MCIvPgo8L2c+Cjwvc3ZnPg==");
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201200%201200%22%3E%0A%20%20%3Cdefs%3E%0A%20%20%20%20%3CclipPath%20id%3D%22globeClip%22%3E%3Ccircle%20cx%3D%22600%22%20cy%3D%22600%22%20r%3D%22540%22%2F%3E%3C%2FclipPath%3E%0A%20%20%3C%2Fdefs%3E%0A%20%20%3Cg%20transform%3D%22rotate(-13%20600%20600)%22%20fill%3D%22none%22%20stroke%3D%22%2328586a%22%20stroke-width%3D%222.2%22%20opacity%3D%22.20%22%20clip-path%3D%22url(%23globeClip)%22%3E%0A%20%20%20%20%3Ccircle%20cx%3D%22600%22%20cy%3D%22600%22%20r%3D%22540%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22118%22%20ry%3D%22540%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22245%22%20ry%3D%22540%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22380%22%20ry%3D%22540%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22485%22%20ry%3D%22540%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M70%20600H1130%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22540%22%20ry%3D%22118%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22540%22%20ry%3D%22245%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22540%22%20ry%3D%22380%22%2F%3E%0A%20%20%20%20%3Cellipse%20cx%3D%22600%22%20cy%3D%22600%22%20rx%3D%22540%22%20ry%3D%22485%22%2F%3E%0A%20%20%3C%2Fg%3E%0A%20%20%3Ccircle%20cx%3D%22600%22%20cy%3D%22600%22%20r%3D%22540%22%20fill%3D%22none%22%20stroke%3D%22%2328586a%22%20stroke-width%3D%222.6%22%20opacity%3D%22.22%22%2F%3E%0A%3C%2Fsvg%3E");
   background-repeat:no-repeat;
-  background-position:calc(50% + 85px) 50%;
-  background-size:1450px 1450px;
+  background-position:68% 42%;
+  background-size:max(1500px,155vw) max(1500px,155vw);
   background-attachment:fixed;
 }
 html[data-portfolio-theme="dagboek"] .sidebar{
@@ -589,13 +589,13 @@ body.can-edit .theme-switcher{display:flex}
 
 @media(max-width:980px){
   html[data-portfolio-theme="dagboek"] body{
-    background-position:center 48%;
-    background-size:1120px 1120px;
+    background-position:66% 40%;
+    background-size:max(1220px,185vw) max(1220px,185vw);
   }
 }
 @media(max-width:700px){
   html[data-portfolio-theme="dagboek"] body{
-    background-size:920px 920px;
-    background-position:center 44%;
+    background-position:63% 36%;
+    background-size:max(980px,230vw) max(980px,230vw);
   }
 }
