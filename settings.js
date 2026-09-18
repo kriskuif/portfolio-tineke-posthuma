@@ -276,33 +276,162 @@
   }
 
   function exportThemeMotif(id){
-    if(id==='wandelgids') return `<svg class="export-motif" aria-hidden="true" viewBox="0 0 220 220">
-      <g fill="currentColor">
-        <path d="M104 199C91 182 87 164 89 144C90 128 86 115 77 104C66 91 51 82 33 76L39 63C59 69 76 80 88 94C84 79 85 63 92 49L104 54C99 68 100 82 106 95C112 79 123 66 138 56L146 67C130 78 120 92 116 109C128 95 144 84 164 77L170 90C150 97 134 109 123 125C113 140 111 156 113 174C115 186 114 195 104 199Z"/>
-        <path d="M96 198C85 204 73 207 58 207C71 199 82 191 89 181L97 185C91 193 84 199 78 202C86 200 92 197 98 193ZM111 198C122 204 135 207 150 207C137 199 126 191 119 181L111 185C117 193 124 199 130 202C122 200 116 197 110 193Z"/>
-        <path d="M100 193C101 177 101 160 98 143C95 125 90 109 82 95L89 91C98 105 104 121 107 140C110 121 117 104 128 90L136 95C124 110 116 127 113 146C110 164 111 180 112 193Z"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(35 73) rotate(-58) scale(.75)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(50 62) rotate(-42) scale(.84)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(67 50) rotate(-28) scale(.9)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(86 42) rotate(-12) scale(.82)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(105 36) rotate(4) scale(.88)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(125 42) rotate(18) scale(.83)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(144 51) rotate(32) scale(.9)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(162 63) rotate(46) scale(.86)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(44 86) rotate(-48) scale(.86)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(63 76) rotate(-34) scale(.8)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(84 67) rotate(-18) scale(.8)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(128 68) rotate(20) scale(.8)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(150 78) rotate(38) scale(.84)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(170 91) rotate(58) scale(.78)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(55 104) rotate(-49) scale(.82)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(76 93) rotate(-30) scale(.78)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(139 96) rotate(32) scale(.78)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(160 107) rotate(52) scale(.82)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(69 120) rotate(-44) scale(.78)"/>
-        <path d="M0-9C8-8 12-1 8 6C3 13-6 13-10 6C-14-1-8-8 0-9Z" transform="translate(148 121) rotate(46) scale(.78)"/>
-      </g>
-    </svg>`;
+    if(id==='wandelgids') return `<svg class="export-motif" aria-hidden="true" viewBox="0 0 250 250">
+            <g fill="currentColor">
+              <!-- brede stam met de typische openingen/bochten uit een tree-of-life silhouet -->
+              <path d="M104 224
+                       C96 207 94 190 96 172
+                       C99 148 101 129 96 112
+                       C91 96 83 84 69 72
+                       L78 64
+                       C91 73 101 84 108 97
+                       C106 79 110 60 121 42
+                       L132 45
+                       C122 64 119 82 123 99
+                       C132 80 145 65 163 53
+                       L171 62
+                       C152 76 139 93 133 112
+                       C147 96 164 84 184 76
+                       L189 88
+                       C166 98 149 112 137 131
+                       C128 146 125 164 127 184
+                       C129 201 126 215 118 226
+                       Z"></path>
+
+              <!-- hoofdtakken, dik en vloeiend zoals de referentie -->
+              <path d="M107 130
+                       C91 116 77 109 56 108
+                       C41 107 31 101 22 91
+                       L27 83
+                       C39 92 50 96 64 94
+                       C82 92 98 98 111 108Z"></path>
+              <path d="M109 112
+                       C94 96 80 88 62 85
+                       C51 83 43 78 35 70
+                       L42 62
+                       C53 70 64 73 76 72
+                       C91 70 103 76 113 89Z"></path>
+              <path d="M115 91
+                       C108 75 99 64 86 56
+                       C75 49 68 41 64 30
+                       L75 27
+                       C81 38 90 45 102 49
+                       C113 53 121 61 126 74Z"></path>
+              <path d="M132 126
+                       C149 111 165 103 185 102
+                       C203 101 216 94 226 83
+                       L232 91
+                       C220 104 206 111 190 113
+                       C168 116 151 126 137 141Z"></path>
+              <path d="M131 108
+                       C146 92 161 84 179 81
+                       C192 79 202 73 210 64
+                       L217 72
+                       C207 83 196 89 183 91
+                       C166 94 151 102 137 117Z"></path>
+              <path d="M129 89
+                       C137 72 147 61 160 53
+                       C172 46 181 38 186 27
+                       L197 31
+                       C191 44 181 54 168 61
+                       C156 68 147 79 141 94Z"></path>
+
+              <!-- lagere zijtakken die de ronde kroon afmaken -->
+              <path d="M101 151
+                       C82 142 66 140 48 144
+                       C35 147 25 145 15 139
+                       L19 130
+                       C31 136 42 136 55 132
+                       C75 126 94 130 108 140Z"></path>
+              <path d="M132 154
+                       C151 143 168 140 188 144
+                       C201 147 213 145 225 138
+                       L230 147
+                       C217 155 203 157 190 154
+                       C170 150 153 154 137 165Z"></path>
+
+              <!-- boomwortels: breed, symmetrisch en duidelijk zichtbaar -->
+              <path d="M106 217
+                       C91 217 79 214 68 207
+                       C60 202 51 199 40 201
+                       C49 193 59 190 72 193
+                       C81 195 90 198 100 197Z"></path>
+              <path d="M116 220
+                       C100 227 87 233 70 235
+                       C80 227 89 219 99 210Z"></path>
+              <path d="M111 222
+                       C102 237 94 242 83 246
+                       C88 235 93 224 101 214Z"></path>
+              <path d="M119 223
+                       C114 239 108 246 101 250
+                       C103 238 106 227 111 216Z"></path>
+              <path d="M123 222
+                       C129 239 135 246 142 250
+                       C140 238 137 227 132 216Z"></path>
+              <path d="M128 220
+                       C144 227 157 233 174 235
+                       C164 227 155 219 145 210Z"></path>
+              <path d="M138 217
+                       C153 217 165 214 176 207
+                       C184 202 193 199 204 201
+                       C195 193 185 190 172 193
+                       C163 195 154 198 144 197Z"></path>
+
+              <!-- losse bladeren: vergelijkbaar met de druppelvormige bladeren uit de referentie -->
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(31 83) rotate(-68) scale(0.86)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(43 66) rotate(-55) scale(0.92)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(58 51) rotate(-46) scale(0.88)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(75 38) rotate(-34) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(95 28) rotate(-20) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(116 22) rotate(-6) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(137 24) rotate(14) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(158 31) rotate(28) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(178 43) rotate(42) scale(0.86)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(197 58) rotate(56) scale(0.9)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(214 77) rotate(68) scale(0.84)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(24 105) rotate(-78) scale(0.84)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(42 96) rotate(-62) scale(0.9)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(61 83) rotate(-48) scale(0.88)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(82 67) rotate(-35) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(105 55) rotate(-20) scale(0.8)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(132 55) rotate(18) scale(0.8)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(154 68) rotate(34) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(177 82) rotate(48) scale(0.86)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(199 96) rotate(62) scale(0.9)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(219 106) rotate(78) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(28 130) rotate(-82) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(49 124) rotate(-68) scale(0.88)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(70 109) rotate(-52) scale(0.84)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(94 91) rotate(-34) scale(0.8)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(119 78) rotate(-15) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(143 81) rotate(17) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(166 95) rotate(35) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(190 109) rotate(52) scale(0.86)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(211 123) rotate(69) scale(0.86)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(38 151) rotate(-76) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(60 149) rotate(-61) scale(0.84)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(82 132) rotate(-44) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(106 112) rotate(-27) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(147 113) rotate(28) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(171 131) rotate(44) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(193 147) rotate(61) scale(0.84)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(216 151) rotate(77) scale(0.76)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(53 172) rotate(-69) scale(0.76)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(76 169) rotate(-53) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(99 149) rotate(-37) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(160 150) rotate(38) scale(0.78)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(183 169) rotate(53) scale(0.82)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(206 172) rotate(69) scale(0.76)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(72 188) rotate(-58) scale(0.72)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(94 181) rotate(-43) scale(0.76)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(166 182) rotate(43) scale(0.76)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(189 188) rotate(58) scale(0.72)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(89 56) rotate(-6) scale(0.68)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(149 53) rotate(12) scale(0.68)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(69 72) rotate(-18) scale(0.7)"></path>
+              <path d="M0-12C9-11 14-3 10 5C6 13-4 15-11 9C-17 3-14-7-6-11C-4-12-2-12 0-12Z" transform="translate(172 71) rotate(20) scale(0.7)"></path>
+            </g>
+          </svg>`;
     if(id==='tijdschrift') return `<svg class="export-motif" aria-hidden="true" viewBox="0 0 220 220">
       <path d="M46.4 10 L47.3 55.8 L43.3 60.7 L33.1 57.1 L58.9 87.8 L51.3 90.4 L34 81.1 L25.1 88.7 L10 82 L21.6 94.4 L21.6 102.4 L31.3 108.7 L28.7 116.7 L43.3 126.4 L66.4 128.7 L71.8 134.9 L38.4 134.9 L37.1 144.2 L14.4 154 L42 166 L45.1 172.7 L41.1 176.7 L50 178.9 L82.9 169.1 L83.8 175.3 L64.2 196.7 L74 193.1 L99.3 199.3 L111.3 180.7 L120.2 189.1 L136.7 166.4 L138.9 154 L172.2 191.8 L173.6 185.6 L142.9 152.7 L173.1 155.8 L173.6 147.8 L190.9 145.1 L205.1 133.1 L182.4 128.7 L180.2 123.8 L202 112.7 L209.6 102.4 L202.9 95.3 L207.8 57.6 L200.7 67.3 L185.1 74 L180.7 70 L165.6 87.8 L158.4 89.1 L161.6 65.6 L154.4 45.6 L156.2 31.8 L145.6 41.6 L125.1 16.2 L127.3 35.8 L125.1 42.4 L119.8 41.6 L122 75.8 L117.6 77.1 L110.4 61.1 L113.1 40.7 L106.9 43.8 L98.4 34.4 L89.6 39.3 L79.8 30 L61.1 24.7 Z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
       <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
