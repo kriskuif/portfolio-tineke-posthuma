@@ -181,7 +181,7 @@ html[data-portfolio-theme="tijdschrift"] .portfolio-group:before{
   background:linear-gradient(180deg,#b96b49,#e1b866);
 }
 
-/* 4. Routekaart — koel blauwgroen met topografische lijnstructuur */
+/* 4. Routekaart — koel blauwgroen met subtiele globe-lijnen */
 html[data-portfolio-theme="dagboek"]{
   --forest:#28586a;
   --forest-2:#3f7485;
@@ -196,10 +196,12 @@ html[data-portfolio-theme="dagboek"]{
 }
 html[data-portfolio-theme="dagboek"] body{
   font-family:"Segoe UI",Tahoma,sans-serif;
-  background:
-    repeating-radial-gradient(ellipse at 15% 25%,transparent 0 22px,rgba(54,101,116,.045) 23px 24px,transparent 25px 42px),
-    repeating-radial-gradient(ellipse at 88% 76%,transparent 0 30px,rgba(54,101,116,.035) 31px 32px,transparent 33px 54px),
-    #f3f7f7;
+  background-color:#f3f7f7;
+  background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgo8ZyBmaWxsPSJub25lIiBzdHJva2U9IiMyODU4NmEiIHN0cm9rZS13aWR0aD0iMS42IiBvcGFjaXR5PSIuMjYiPgogIDxjaXJjbGUgY3g9IjUwMCIgY3k9IjUwMCIgcj0iNDcwIi8+CiAgPCEtLSBsYXRpdHVkZSBiYW5kcyAtLT4KICA8cGF0aCBkPSJNNzAgMzMwIEMyNjAgNDEwIDc0MCA0MTAgOTMwIDMzMCIvPgogIDxwYXRoIGQ9Ik00MCA0MjAgQzI1MCA0NzAgNzUwIDQ3MCA5NjAgNDIwIi8+CiAgPHBhdGggZD0iTTMwIDUwMCBDMjUwIDUwMCA3NTAgNTAwIDk3MCA1MDAiLz4KICA8cGF0aCBkPSJNNDAgNTgwIEMyNTAgNTMwIDc1MCA1MzAgOTYwIDU4MCIvPgogIDxwYXRoIGQ9Ik03MCA2NzAgQzI2MCA1OTAgNzQwIDU5MCA5MzAgNjcwIi8+CiAgPCEtLSBsb25naXR1ZGUgY3VydmVzIC0tPgogIDxwYXRoIGQ9Ik01MDAgMzAgQzM1NSAyMjAgMzU1IDc4MCA1MDAgOTcwIi8+CiAgPHBhdGggZD0iTTUwMCAzMCBDNjQ1IDIyMCA2NDUgNzgwIDUwMCA5NzAiLz4KICA8cGF0aCBkPSJNNTAwIDMwIEMyNDUgMjMwIDI0NSA3NzAgNTAwIDk3MCIvPgogIDxwYXRoIGQ9Ik01MDAgMzAgQzc1NSAyMzAgNzU1IDc3MCA1MDAgOTcwIi8+CiAgPHBhdGggZD0iTTUwMCAzMCBDMTQ1IDI1NSAxNDUgNzQ1IDUwMCA5NzAiLz4KICA8cGF0aCBkPSJNNTAwIDMwIEM4NTUgMjU1IDg1NSA3NDUgNTAwIDk3MCIvPgo8L2c+Cjwvc3ZnPg==");
+  background-repeat:no-repeat;
+  background-position:calc(50% + 85px) 50%;
+  background-size:1450px 1450px;
+  background-attachment:fixed;
 }
 html[data-portfolio-theme="dagboek"] .sidebar{
   background:linear-gradient(180deg,#183e4b,#245668 55%,#1c4654);
@@ -208,9 +210,7 @@ html[data-portfolio-theme="dagboek"] .topbar{
   background:rgba(243,247,247,.94);
 }
 html[data-portfolio-theme="dagboek"] .hero{
-  background:
-    repeating-radial-gradient(ellipse at 88% 22%,transparent 0 22px,rgba(49,104,120,.08) 23px 24px,transparent 25px 42px),
-    linear-gradient(135deg,#e5eeee,#f8fbfa 52%,#dfeaed);
+  background:linear-gradient(135deg,#e5eeee,#f8fbfa 52%,#dfeaed);
   border-color:#d1dfe1;
 }
 html[data-portfolio-theme="dagboek"] .hero h2,
@@ -585,4 +585,17 @@ body.can-edit .theme-switcher{display:flex}
 @media(max-width:520px){
   .theme-current{width:86px;min-width:86px}
   .theme-top-menu{right:-46px}
+}
+
+@media(max-width:980px){
+  html[data-portfolio-theme="dagboek"] body{
+    background-position:center 48%;
+    background-size:1120px 1120px;
+  }
+}
+@media(max-width:700px){
+  html[data-portfolio-theme="dagboek"] body{
+    background-size:920px 920px;
+    background-position:center 44%;
+  }
 }
