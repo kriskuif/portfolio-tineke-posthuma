@@ -5,7 +5,7 @@
   const FILE_ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const DOCX_MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   const JSZIP_SRC='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-  const DOCX_PREVIEW_SRC='https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js';
+  const DOCX_PREVIEW_SRC='https://cdn.jsdelivr.net/npm/docx-preview@0.4.1/dist/docx-preview.min.js';
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
   let docxLibraryPromise=null;
@@ -49,7 +49,7 @@
   const publicUrl=path=>client.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   const normalizeIds=value=>String(value||'').split(',').map(id=>id.trim().toLowerCase()).filter((id,index,all)=>FILE_ID.test(id)&&all.indexOf(id)===index);
   const fileExt=item=>String(item?.file_name||'').split('.').pop().toLowerCase();
-  const isDocx=item=>String(item?.mime_type||'').toLowerCase()===DOCX_MIME||fileExt(item)==='docx';
+  const isDocx=item=>String(item?.mime_type||'').toLowerCase()===DOCX_MIME||fileExt(item)==='docx'||/\.docx$/i.test(String(item?.storage_path||''));
 
   function loadExternalScript(src,test){
     if(test()) return Promise.resolve();
@@ -112,27 +112,23 @@
       const docx=await ensureDocxLibrary();
       const response=await fetch(url);
       if(!response.ok) throw new Error(`Bestand ophalen mislukt (${response.status}).`);
-      const blob=await response.blob();
+      const buffer=await response.arrayBuffer();
+      const bytes=new Uint8Array(buffer);
+      if(bytes.length<4||bytes[0]!==0x50||bytes[1]!==0x4b) throw new Error('Het bestand is geen geldig DOCX/ZIP-bestand.');
       if(!paper.isConnected||paper.dataset.renderId!==renderId) return;
       const host=document.createElement('div');
       host.className='docx-preview-host';
       paper.replaceChildren(host);
-      await docx.renderAsync(blob,host,host,{
+      await docx.renderAsync(buffer,host,undefined,{
         inWrapper:true,
         breakPages:true,
-        ignoreWidth:false,
-        ignoreHeight:false,
-        ignoreFonts:false,
-        renderHeaders:true,
-        renderFooters:true,
-        renderFootnotes:true,
-        renderEndnotes:true,
-        useBase64URL:true
+        ignoreLastRenderedPageBreak:false
       });
     }catch(err){
       console.error('Gekoppeld Word-document kon niet worden weergegeven:',err);
       if(!paper.isConnected||paper.dataset.renderId!==renderId) return;
-      paper.innerHTML=`<div class="docx-preview-error"><div><p>Het Word-document kon niet in de ingebouwde weergave worden geladen.</p><p><a href="${esc(url)}" target="_blank" rel="noopener">Bestand openen</a></p></div></div>`;
+      const officeUrl=`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
+      paper.innerHTML=`<div class="docx-preview-error"><div><p>Het Word-document kon niet in de ingebouwde weergave worden geladen.</p><p class="docx-preview-error-detail">${esc(err?.message||'Onbekende fout')}</p><p><a href="${esc(url)}" target="_blank" rel="noopener">Bestand openen</a></p><p><a href="${esc(officeUrl)}" target="_blank" rel="noopener">Openen via Microsoft Office Online</a></p></div></div>`;
     }
   }
 
