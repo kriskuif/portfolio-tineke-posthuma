@@ -197,6 +197,121 @@
   const wAttr=(node,name)=>node?.getAttributeNS?.(W_NS,name)||node?.getAttribute?.(`w:${name}`)||node?.getAttribute?.(name)||'';
   const directChild=(node,name)=>[...(node?.children||[])].find(child=>isW(child,name));
 
+  const FONT_SLOTS=[
+    {key:'ascii',attrs:['ascii','asciiTheme']},
+    {key:'hAnsi',attrs:['hAnsi','hAnsiTheme']},
+    {key:'eastAsia',attrs:['eastAsia','eastAsiaTheme']},
+    {key:'cs',attrs:['cs','cstheme']}
+  ];
+
+  function readFontSlot(rFonts,slot){
+    if(!rFonts) return null;
+    for(const attr of slot.attrs){
+      const value=wAttr(rFonts,attr);
+      if(value) return {attr,value};
+    }
+    return null;
+  }
+
+  function readFontSlots(rFonts){
+    const out={};
+    for(const slot of FONT_SLOTS){
+      const value=readFontSlot(rFonts,slot);
+      if(value) out[slot.key]=value;
+    }
+    return out;
+  }
+
+  function buildFontInheritanceContext(stylesXml){
+    if(!stylesXml) return null;
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(stylesXml,'application/xml');
+    if(doc.getElementsByTagName('parsererror').length) return null;
+
+    const root=doc.documentElement;
+    const docDefaults=directChild(root,'docDefaults');
+    const rPrDefault=directChild(docDefaults,'rPrDefault');
+    const defaultRPr=directChild(rPrDefault,'rPr');
+    const defaults=readFontSlots(directChild(defaultRPr,'rFonts'));
+    const styles=new Map();
+    let defaultParagraphStyle='';
+
+    for(const style of root.getElementsByTagNameNS(W_NS,'style')){
+      const id=wAttr(style,'styleId');
+      if(!id) continue;
+      const basedOn=wAttr(directChild(style,'basedOn'),'val');
+      const rPr=directChild(style,'rPr');
+      styles.set(id,{
+        basedOn,
+        fonts:readFontSlots(directChild(rPr,'rFonts'))
+      });
+      const type=wAttr(style,'type');
+      const isDefault=/^(?:1|true|on)$/i.test(wAttr(style,'default'));
+      if(type==='paragraph'&&isDefault) defaultParagraphStyle=id;
+    }
+
+    const cache=new Map();
+    const resolveStyle=id=>{
+      if(!id) return {};
+      if(cache.has(id)) return cache.get(id);
+      const chain=[];
+      const seen=new Set();
+      let cursor=id;
+      while(cursor&&!seen.has(cursor)){
+        seen.add(cursor);
+        const style=styles.get(cursor);
+        if(!style) break;
+        chain.unshift(style);
+        cursor=style.basedOn;
+      }
+      const out={};
+      for(const style of chain) Object.assign(out,style.fonts);
+      cache.set(id,out);
+      return out;
+    };
+
+    return {defaults,defaultParagraphStyle,resolveStyle};
+  }
+
+  function materializePartialRunFonts(xml,fontContext){
+    if(!fontContext) return {xml,changes:0};
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(xml,'application/xml');
+    if(doc.getElementsByTagName('parsererror').length) return {xml,changes:0};
+
+    let changes=0;
+    const paragraphs=[...doc.getElementsByTagNameNS(W_NS,'p')];
+    for(const paragraph of paragraphs){
+      const pPr=directChild(paragraph,'pPr');
+      const pStyle=wAttr(directChild(pPr,'pStyle'),'val')||fontContext.defaultParagraphStyle;
+      const inherited={...fontContext.defaults,...fontContext.resolveStyle(pStyle)};
+
+      for(const run of paragraph.getElementsByTagNameNS(W_NS,'r')){
+        const rPr=directChild(run,'rPr');
+        const rFonts=directChild(rPr,'rFonts');
+        if(!rFonts) continue;
+
+        const rStyle=wAttr(directChild(rPr,'rStyle'),'val');
+        const effective={...inherited,...fontContext.resolveStyle(rStyle)};
+        const direct=readFontSlots(rFonts);
+        let changed=false;
+
+        for(const slot of FONT_SLOTS){
+          if(direct[slot.key]) continue;
+          const inheritedSlot=effective[slot.key];
+          if(!inheritedSlot) continue;
+          rFonts.setAttributeNS(W_NS,`w:${inheritedSlot.attr}`,inheritedSlot.value);
+          changed=true;
+        }
+
+        if(changed) changes+=1;
+      }
+    }
+
+    if(!changes) return {xml,changes:0};
+    return {xml:new XMLSerializer().serializeToString(doc),changes};
+  }
+
   function ensureRowNoSplit(doc,row){
     let trPr=directChild(row,'trPr');
     if(trPr&&[...trPr.children].some(el=>isW(el,'cantSplit'))) return false;
@@ -479,7 +594,16 @@
     let rowPaginationChanges=0;
     let tablePaginationChanges=0;
     let tableLayoutChanges=0;
+    let fontInheritanceChanges=0;
     let changed=false;
+
+    let fontContext=null;
+    const stylesEntry=zip.file('word/styles.xml');
+    if(stylesEntry){
+      const rawStyles=await stylesEntry.async('string');
+      const repairedStyles=dedupeXmlAttributes(rawStyles);
+      fontContext=buildFontInheritanceContext(repairedStyles.xml);
+    }
 
     const names=Object.keys(zip.files).filter(name=>
       !zip.files[name].dir&&(/\.xml$/i.test(name)||/\.rels$/i.test(name))
@@ -490,6 +614,12 @@
       const repaired=dedupeXmlAttributes(original);
       let output=repaired.xml;
       repairedAttributes+=repaired.changes;
+
+      if(fontContext&&/^word\/(?:document|header\d+|footer\d+|footnotes|endnotes|comments)\.xml$/i.test(name)){
+        const fontFixed=materializePartialRunFonts(output,fontContext);
+        output=fontFixed.xml;
+        fontInheritanceChanges+=fontFixed.changes;
+      }
 
       if(name==='word/document.xml'){
         const paged=improveTablePagination(output);
@@ -508,6 +638,9 @@
     if(!changed) return bytes;
     if(repairedAttributes){
       console.info(`DOCX-conversie: ${repairedAttributes} dubbel XML-attribuut${repairedAttributes===1?'':'en'} tijdelijk hersteld.`);
+    }
+    if(fontInheritanceChanges){
+      console.info(`DOCX-conversie: bij ${fontInheritanceChanges} tekstrun${fontInheritanceChanges===1?'':'s'} ontbrekende overgeërfde lettertype-informatie tijdelijk aangevuld.`);
     }
     if(rowPaginationChanges){
       console.info(`DOCX-conversie: ${rowPaginationChanges} tabelrij${rowPaginationChanges===1?'':'en'} beschermd tegen pagina-afbreking.`);
