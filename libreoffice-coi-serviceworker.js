@@ -1,20 +1,29 @@
-/* Legacy service worker retired.
-   LibreOffice now runs in its own isolated converter iframe, so the
-   portfolio itself no longer needs COOP/COEP headers. */
+/* Cross-origin isolation helper for the in-browser LibreOffice WASM converter.
+   The portfolio keeps external assets compatible by loading them with CORS. */
 'use strict';
 
 self.addEventListener('install',()=>self.skipWaiting());
-
-self.addEventListener('activate',event=>{
-  event.waitUntil((async()=>{
-    await self.registration.unregister();
-    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-    for(const client of clients){
-      try{await client.navigate(client.url);}catch(_err){}
-    }
-  })());
-});
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
 
 self.addEventListener('fetch',event=>{
-  event.respondWith(fetch(event.request));
+  const request=event.request;
+  if(request.cache==='only-if-cached'&&request.mode!=='same-origin') return;
+
+  event.respondWith(
+    fetch(request).then(response=>{
+      if(!response||response.status===0) return response;
+      const headers=new Headers(response.headers);
+      headers.set('Cross-Origin-Opener-Policy','same-origin');
+      headers.set('Cross-Origin-Embedder-Policy','require-corp');
+      headers.set('Cross-Origin-Resource-Policy','cross-origin');
+      return new Response(response.body,{
+        status:response.status,
+        statusText:response.statusText,
+        headers
+      });
+    }).catch(error=>{
+      console.error('LibreOffice isolation worker fetch mislukt:',error);
+      return fetch(request);
+    })
+  );
 });
