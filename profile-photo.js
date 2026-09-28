@@ -33,6 +33,19 @@
     return document.querySelector('.hero-photo-card img');
   }
 
+  function prepareCorsImage(img){
+    if (!img) return img;
+    img.crossOrigin = 'anonymous';
+    img.setAttribute('crossorigin', 'anonymous');
+    return img;
+  }
+
+  function setCorsSrc(img, url){
+    if (!img || !url) return;
+    prepareCorsImage(img);
+    img.src = url;
+  }
+
   function publicUrl(cacheBust = ''){
     const { data } = client.storage.from(BUCKET).getPublicUrl(OBJECT_PATH);
     const base = data?.publicUrl || '';
@@ -50,11 +63,12 @@
   function showStoredPhoto(cacheBust = Date.now()){
     const img = heroImage();
     if (!img) return;
+    prepareCorsImage(img);
     const url = publicUrl(cacheBust);
     if (!url) return;
-    const probe = new Image();
+    const probe = prepareCorsImage(new Image());
     probe.onload = () => {
-      img.src = url;
+      setCorsSrc(img, url);
       img.dataset.profilePhotoSource = 'supabase';
     };
     probe.onerror = () => {
@@ -69,7 +83,7 @@
     const img = slot.querySelector('[data-passport-image]');
     const placeholder = slot.querySelector('[data-passport-placeholder]');
     if (!img) return;
-    img.src = url;
+    setCorsSrc(img, url);
     img.hidden = false;
     if (placeholder) placeholder.hidden = true;
     slot.classList.remove('is-empty');
@@ -79,7 +93,7 @@
     if (!slot) return;
     const url = passportPublicUrl(cacheBust);
     if (!url) return;
-    const probe = new Image();
+    const probe = prepareCorsImage(new Image());
     probe.onload = () => setPassportSlotImage(slot, url);
     probe.onerror = () => {
       slot.classList.add('is-empty');
@@ -152,7 +166,7 @@
     slot.className = 'passport-photo-slot is-empty';
     slot.dataset.passportPhotoSlot = '';
     slot.innerHTML = `
-      <img data-passport-image alt="Pasfoto Tineke Posthuma" hidden>
+      <img data-passport-image crossorigin="anonymous" alt="Pasfoto Tineke Posthuma" hidden>
       <div class="passport-photo-placeholder" data-passport-placeholder><span><b>＋</b>Pasfoto toevoegen</span></div>
       <button class="passport-photo-button" type="button" data-passport-button aria-label="Pasfoto uploaden of wijzigen"></button>
       <span class="passport-photo-edit-hint">Pasfoto uploaden / wijzigen</span>
@@ -185,7 +199,7 @@
       <p>Wijzig de foto die bovenaan het portfolio staat. De opgeslagen foto wordt centraal bewaard en is daarna voor iedere bezoeker zichtbaar.</p>
       <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:start">
         <div>
-          <img data-profile-preview src="${currentSrc}" alt="Voorbeeld profielfoto" style="display:block;width:150px;max-height:190px;object-fit:cover;border-radius:14px;border:1px solid #dfe5df;background:#fff">
+          <img data-profile-preview crossorigin="anonymous" src="${currentSrc}" alt="Voorbeeld profielfoto" style="display:block;width:150px;max-height:190px;object-fit:cover;border-radius:14px;border:1px solid #dfe5df;background:#fff">
         </div>
         <div class="settings-form">
           <label>Nieuwe foto
@@ -204,7 +218,7 @@
     else grid.appendChild(card);
 
     const input = card.querySelector('[data-profile-file]');
-    const preview = card.querySelector('[data-profile-preview]');
+    const preview = prepareCorsImage(card.querySelector('[data-profile-preview]'));
     const save = card.querySelector('[data-save-profile-photo]');
     const message = card.querySelector('[data-profile-message]');
     let selected = null;
@@ -216,7 +230,7 @@
       if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
       previewObjectUrl = null;
       if (!selected) {
-        preview.src = heroImage()?.src || DEFAULT_SRC;
+        setCorsSrc(preview, heroImage()?.src || DEFAULT_SRC);
         message.textContent = '';
         return;
       }
@@ -252,11 +266,12 @@
         if (error) throw error;
         const stamp = Date.now();
         const url = publicUrl(stamp);
-        if (heroImage()) {
-          heroImage().src = url;
-          heroImage().dataset.profilePhotoSource = 'supabase';
+        const hero = heroImage();
+        if (hero) {
+          setCorsSrc(hero, url);
+          hero.dataset.profilePhotoSource = 'supabase';
         }
-        preview.src = url;
+        setCorsSrc(preview, url);
         input.value = '';
         selected = null;
         if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
@@ -279,6 +294,7 @@
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
+  prepareCorsImage(heroImage());
   showStoredPhoto();
   ensurePassportPhotoSlot();
 })();
