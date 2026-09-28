@@ -23,8 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VERSION='2.7.2'
-          BASE="https://cdn.jsdelivr.net/npm/@matbee/libreoffice-converter@${VERSION}"
+          BASE='https://erseco.github.io/libreoffice-document-converter'
           curl --fail --location --retry 3 --silent --show-error "$BASE/dist/browser.worker.global.js" -o libreoffice-worker-proxy.js
           curl --fail --location --retry 3 --silent --show-error "$BASE/wasm/soffice.js" -o libreoffice-soffice-proxy.js
           curl --fail --location --retry 3 --silent --show-error "$BASE/wasm/soffice.worker.js" -o libreoffice-soffice-worker-proxy.js
