@@ -1,0 +1,71 @@
+name: Fix DOCX viewer
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-docx:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update DOCX viewer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          files = [Path('portfolio-files.js'), Path('portfolio-text-file-links.js')]
+          old_src = "https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"
+          new_src = "https://cdn.jsdelivr.net/npm/docx-preview@0.4.1/dist/docx-preview.min.js"
+          old_isdocx = "const isDocx=item=>String(item?.mime_type||'').toLowerCase()===DOCX_MIME||fileExt(item)==='docx';"
+          new_isdocx = "const isDocx=item=>String(item?.mime_type||'').toLowerCase()===DOCX_MIME||fileExt(item)==='docx'||/\\.docx$/i.test(String(item?.storage_path||''));"
+
+          for path in files:
+            text = path.read_text()
+            if old_src in text:
+              text = text.replace(old_src, new_src)
+            if old_isdocx in text:
+              text = text.replace(old_isdocx, new_isdocx)
+
+            old_blob = "      const blob=await response.blob();"
+            new_buffer = "      const buffer=await response.arrayBuffer();\n      const bytes=new Uint8Array(buffer);\n      if(bytes.length<4||bytes[0]!==0x50||bytes[1]!==0x4b) throw new Error('Het bestand is geen geldig DOCX/ZIP-bestand.');"
+            if old_blob in text:
+              text = text.replace(old_blob, new_buffer, 1)
+
+            marker = "      await docx.renderAsync(blob,host,host,{"
+            if marker in text:
+              start = text.index(marker)
+              end = text.index("      });", start) + len("      });")
+              replacement = "      await docx.renderAsync(buffer,host,undefined,{\n        inWrapper:true,\n        breakPages:true,\n        ignoreLastRenderedPageBreak:false\n      });"
+              text = text[:start] + replacement + text[end:]
+
+            old_error = "      paper.innerHTML=`<div class=\"docx-preview-error\"><div><p>Het Word-document kon niet in de ingebouwde weergave worden geladen.</p><p><a href=\"${esc(url)}\" target=\"_blank\" rel=\"noopener\">Bestand openen</a></p></div></div>`;"
+            if old_error in text:
+              new_error = "      const officeUrl=`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;\n      paper.innerHTML=`<div class=\"docx-preview-error\"><div><p>Het Word-document kon niet in de ingebouwde weergave worden geladen.</p><p class=\"docx-preview-error-detail\">${esc(err?.message||'Onbekende fout')}</p><p><a href=\"${esc(url)}\" target=\"_blank\" rel=\"noopener\">Bestand openen</a></p><p><a href=\"${esc(officeUrl)}\" target=\"_blank\" rel=\"noopener\">Openen via Microsoft Office Online</a></p></div></div>`;"
+              text = text.replace(old_error, new_error, 1)
+
+            path.write_text(text)
+
+          index = Path('index.html')
+          html = index.read_text()
+          html = html.replace('portfolio-files.js?v=20260928-docx-preview-2', 'portfolio-files.js?v=20260928-docx-preview-3')
+          html = html.replace('portfolio-text-file-links.js?v=20260914-1540', 'portfolio-text-file-links.js?v=20260928-docx-preview-3')
+          index.write_text(html)
+          PY
+      - name: Commit viewer fix
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add portfolio-files.js portfolio-text-file-links.js index.html
+          git commit -m 'Harden DOCX preview rendering'
+          git push
