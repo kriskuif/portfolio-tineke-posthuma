@@ -192,21 +192,158 @@
     return {xml:repaired,changes};
   }
 
+  const isW=(node,name)=>node?.namespaceURI===W_NS&&node.localName===name;
+  const wElement=(doc,name)=>doc.createElementNS(W_NS,`w:${name}`);
+  const wAttr=(node,name)=>node?.getAttributeNS?.(W_NS,name)||node?.getAttribute?.(`w:${name}`)||node?.getAttribute?.(name)||'';
+  const directChild=(node,name)=>[...(node?.children||[])].find(child=>isW(child,name));
+
+  function ensureRowNoSplit(doc,row){
+    let trPr=directChild(row,'trPr');
+    if(trPr&&[...trPr.children].some(el=>isW(el,'cantSplit'))) return false;
+    if(!trPr){
+      trPr=wElement(doc,'trPr');
+      row.insertBefore(trPr,row.firstChild);
+    }
+    trPr.appendChild(wElement(doc,'cantSplit'));
+    return true;
+  }
+
+  function contentWidthTwips(doc){
+    const sections=[...doc.getElementsByTagNameNS(W_NS,'sectPr')];
+    const sect=sections.at(-1);
+    if(!sect) return 9026;
+    const pgSz=directChild(sect,'pgSz');
+    const pgMar=directChild(sect,'pgMar');
+    const pageWidth=Number(wAttr(pgSz,'w'))||11906;
+    const left=Number(wAttr(pgMar,'left'))||1440;
+    const right=Number(wAttr(pgMar,'right'))||1440;
+    const gutter=Number(wAttr(pgMar,'gutter'))||0;
+    return Math.max(2400,pageWidth-left-right-gutter);
+  }
+
+  function tableHasTableAncestor(table){
+    let node=table.parentElement;
+    while(node){
+      if(isW(node,'tbl')) return true;
+      if(isW(node,'body')) return false;
+      node=node.parentElement;
+    }
+    return false;
+  }
+
+  function tableShouldStayTogether(table){
+    if(tableHasTableAncestor(table)) return false;
+    const nested=[...table.getElementsByTagNameNS(W_NS,'tbl')].filter(node=>node!==table);
+    if(nested.length) return false;
+
+    const rows=[...table.getElementsByTagNameNS(W_NS,'tr')];
+    if(rows.length<2||rows.length>12) return false;
+
+    const paragraphs=table.getElementsByTagNameNS(W_NS,'p').length;
+    const drawings=table.getElementsByTagNameNS(W_NS,'drawing').length;
+    const textLength=[...table.getElementsByTagNameNS(W_NS,'t')]
+      .reduce((sum,node)=>sum+(node.textContent||'').length,0);
+    if(paragraphs>60||drawings>3||textLength>10000) return false;
+
+    const hasExplicitPageBreak=[...table.getElementsByTagNameNS(W_NS,'br')]
+      .some(br=>(br.getAttributeNS(W_NS,'type')||br.getAttribute('w:type')||br.getAttribute('type'))==='page');
+    if(hasExplicitPageBreak) return false;
+
+    let totalDrawingHeight=0;
+    for(const extent of table.getElementsByTagNameNS(WP_NS,'extent')){
+      const cy=Number(extent.getAttribute('cy')||0);
+      if(!Number.isFinite(cy)) continue;
+      if(cy>5500000) return false;
+      totalDrawingHeight+=cy;
+    }
+    if(totalDrawingHeight>7000000) return false;
+
+    let statedRowHeight=0;
+    for(const row of rows){
+      const trPr=directChild(row,'trPr');
+      const trHeight=directChild(trPr,'trHeight');
+      const value=Number(wAttr(trHeight,'val'));
+      if(Number.isFinite(value)&&value>0) statedRowHeight+=value;
+    }
+    if(statedRowHeight>10500) return false;
+
+    return true;
+  }
+
+  function wrapTableToKeepTogether(doc,table,pageWidthTwips){
+    const parent=table.parentNode;
+    if(!parent) return false;
+
+    const outer=wElement(doc,'tbl');
+    const tblPr=wElement(doc,'tblPr');
+    const tblW=wElement(doc,'tblW');
+    tblW.setAttributeNS(W_NS,'w:w',String(pageWidthTwips));
+    tblW.setAttributeNS(W_NS,'w:type','dxa');
+    tblPr.appendChild(tblW);
+
+    const borders=wElement(doc,'tblBorders');
+    for(const side of ['top','left','bottom','right','insideH','insideV']){
+      const border=wElement(doc,side);
+      border.setAttributeNS(W_NS,'w:val','nil');
+      borders.appendChild(border);
+    }
+    tblPr.appendChild(borders);
+
+    const cellMar=wElement(doc,'tblCellMar');
+    for(const side of ['top','left','bottom','right']){
+      const margin=wElement(doc,side);
+      margin.setAttributeNS(W_NS,'w:w','0');
+      margin.setAttributeNS(W_NS,'w:type','dxa');
+      cellMar.appendChild(margin);
+    }
+    tblPr.appendChild(cellMar);
+    outer.appendChild(tblPr);
+
+    const grid=wElement(doc,'tblGrid');
+    const gridCol=wElement(doc,'gridCol');
+    gridCol.setAttributeNS(W_NS,'w:w',String(pageWidthTwips));
+    grid.appendChild(gridCol);
+    outer.appendChild(grid);
+
+    const row=wElement(doc,'tr');
+    const trPr=wElement(doc,'trPr');
+    trPr.appendChild(wElement(doc,'cantSplit'));
+    row.appendChild(trPr);
+
+    const cell=wElement(doc,'tc');
+    const tcPr=wElement(doc,'tcPr');
+    const tcW=wElement(doc,'tcW');
+    tcW.setAttributeNS(W_NS,'w:w',String(pageWidthTwips));
+    tcW.setAttributeNS(W_NS,'w:type','dxa');
+    tcPr.appendChild(tcW);
+
+    const tcMar=wElement(doc,'tcMar');
+    for(const side of ['top','left','bottom','right']){
+      const margin=wElement(doc,side);
+      margin.setAttributeNS(W_NS,'w:w','0');
+      margin.setAttributeNS(W_NS,'w:type','dxa');
+      tcMar.appendChild(margin);
+    }
+    tcPr.appendChild(tcMar);
+    cell.appendChild(tcPr);
+
+    parent.replaceChild(outer,table);
+    cell.appendChild(table);
+    row.appendChild(cell);
+    outer.appendChild(row);
+    return true;
+  }
+
   function improveTablePagination(xml){
     const parser=new DOMParser();
     const doc=parser.parseFromString(xml,'application/xml');
     if(doc.getElementsByTagName('parsererror').length){
-      return {xml,changes:0};
+      return {xml,rowChanges:0,tableChanges:0,changes:0};
     }
 
-    let changes=0;
+    let rowChanges=0;
     const rows=[...doc.getElementsByTagNameNS(W_NS,'tr')];
     for(const row of rows){
-      const direct=[...row.children];
-      let trPr=direct.find(el=>el.namespaceURI===W_NS&&el.localName==='trPr');
-      const alreadyNoSplit=trPr&&[...trPr.children].some(el=>el.namespaceURI===W_NS&&el.localName==='cantSplit');
-      if(alreadyNoSplit) continue;
-
       const paragraphCount=row.getElementsByTagNameNS(W_NS,'p').length;
       const nestedTableCount=row.getElementsByTagNameNS(W_NS,'tbl').length;
       const drawingCount=row.getElementsByTagNameNS(W_NS,'drawing').length;
@@ -225,8 +362,6 @@
       const hasExplicitPageBreak=[...row.getElementsByTagNameNS(W_NS,'br')]
         .some(br=>(br.getAttributeNS(W_NS,'type')||br.getAttribute('w:type')||br.getAttribute('type'))==='page');
 
-      // Keep ordinary form/table rows together. Very large/complex rows are
-      // deliberately left splittable so they cannot overflow a full page.
       if(
         paragraphCount>20 ||
         nestedTableCount>0 ||
@@ -236,16 +371,25 @@
         hasExplicitPageBreak
       ) continue;
 
-      if(!trPr){
-        trPr=doc.createElementNS(W_NS,'w:trPr');
-        row.insertBefore(trPr,row.firstChild);
-      }
-      trPr.appendChild(doc.createElementNS(W_NS,'w:cantSplit'));
-      changes+=1;
+      if(ensureRowNoSplit(doc,row)) rowChanges+=1;
     }
 
-    if(!changes) return {xml,changes:0};
-    return {xml:new XMLSerializer().serializeToString(doc),changes};
+    const pageWidth=contentWidthTwips(doc);
+    let tableChanges=0;
+    const tables=[...doc.getElementsByTagNameNS(W_NS,'tbl')];
+    for(const table of tables){
+      if(!tableShouldStayTogether(table)) continue;
+      if(wrapTableToKeepTogether(doc,table,pageWidth)) tableChanges+=1;
+    }
+
+    const changes=rowChanges+tableChanges;
+    if(!changes) return {xml,rowChanges:0,tableChanges:0,changes:0};
+    return {
+      xml:new XMLSerializer().serializeToString(doc),
+      rowChanges,
+      tableChanges,
+      changes
+    };
   }
 
   async function prepareDocxForPdf(file){
@@ -253,7 +397,8 @@
     const bytes=new Uint8Array(await file.arrayBuffer());
     const zip=await JSZip.loadAsync(bytes);
     let repairedAttributes=0;
-    let paginationChanges=0;
+    let rowPaginationChanges=0;
+    let tablePaginationChanges=0;
     let changed=false;
 
     const names=Object.keys(zip.files).filter(name=>
@@ -269,7 +414,8 @@
       if(name==='word/document.xml'){
         const paged=improveTablePagination(output);
         output=paged.xml;
-        paginationChanges+=paged.changes;
+        rowPaginationChanges+=paged.rowChanges;
+        tablePaginationChanges+=paged.tableChanges;
       }
 
       if(output!==original){
@@ -282,8 +428,11 @@
     if(repairedAttributes){
       console.info(`DOCX-conversie: ${repairedAttributes} dubbel XML-attribuut${repairedAttributes===1?'':'en'} tijdelijk hersteld.`);
     }
-    if(paginationChanges){
-      console.info(`DOCX-conversie: ${paginationChanges} tabelrij${paginationChanges===1?'':'en'} beschermd tegen pagina-afbreking.`);
+    if(rowPaginationChanges){
+      console.info(`DOCX-conversie: ${rowPaginationChanges} tabelrij${rowPaginationChanges===1?'':'en'} beschermd tegen pagina-afbreking.`);
+    }
+    if(tablePaginationChanges){
+      console.info(`DOCX-conversie: ${tablePaginationChanges} compacte tabel${tablePaginationChanges===1?'':'len'} als geheel bij elkaar gehouden.`);
     }
     return zip.generateAsync({type:'uint8array',compression:'DEFLATE',compressionOptions:{level:6}});
   }
