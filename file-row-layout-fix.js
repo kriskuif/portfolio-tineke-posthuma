@@ -83,7 +83,7 @@
   `;
   document.head.appendChild(style);
 
-  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':c==='"'?'&quot;':'&#39;');
   const ext=item=>{
     const name=String(item?.file_name||item?.storage_path||'');
     return (name.split('.').pop()||'').toLowerCase();
