@@ -43,13 +43,17 @@
     .file-upload-body{padding:18px;display:grid;gap:13px}
     .file-upload-body label{display:grid;gap:6px;font-size:.79rem;font-weight:850;color:#405047}
     .file-upload-body input[type="text"],.file-upload-body input[type="file"],.file-upload-body select{width:100%;border:1px solid #ced9d2;border-radius:11px;background:#fff;padding:10px 11px;font:inherit;color:#263b32;box-sizing:border-box}
-    .file-category-control{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;align-items:end}
-    .file-category-add{width:42px;height:42px;border:1px solid #c8d9cf;border-radius:11px;background:#eef5f0;color:#1f5e4a;font:inherit;font-size:1.35rem;font-weight:700;cursor:pointer}
-    .file-category-add:hover,.file-category-add:focus-visible{background:#e3eee7;outline:none}
+    .file-category-control{display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:7px;align-items:end}
+    .file-category-add{width:30px;height:30px;align-self:end;margin-bottom:6px;border:1px solid #d9e4dd;border-radius:9px;background:transparent;color:#60766b;font:inherit;font-size:1rem;font-weight:600;line-height:1;cursor:pointer}
+    .file-category-add:hover,.file-category-add:focus-visible{background:#f3f7f4;border-color:#cbd9d0;color:#1f5e4a;outline:none}
     .file-category-new{display:none;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;padding:10px;border:1px solid #e0e8e3;border-radius:12px;background:#f7faf8}
     .file-category-new.open{display:grid}
     .file-category-new label{margin:0}
-    .file-category-save{height:42px;border:0;border-radius:10px;background:#1f5e4a;color:#fff;padding:0 13px;font:inherit;font-size:.78rem;font-weight:850;cursor:pointer}
+    .file-category-new-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px}
+    .file-category-save,.file-category-cancel{height:36px;border-radius:9px;padding:0 12px;font:inherit;font-size:.76rem;font-weight:850;cursor:pointer}
+    .file-category-save{border:0;background:#1f5e4a;color:#fff}
+    .file-category-cancel{border:1px solid #d8e2dc;background:#fff;color:#52655b}
+    .file-category-cancel:hover,.file-category-cancel:focus-visible{background:#f1f5f2;color:#294f40;outline:none}
     .file-upload-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
     .file-upload-btn{border:0;border-radius:11px;background:#1f5e4a;color:#fff;padding:9px 13px;font:inherit;font-size:.8rem;font-weight:850;cursor:pointer}
     .file-upload-btn.secondary{background:#eef3ef;color:#1f5e4a;border:1px solid #dce7df}
@@ -78,9 +82,9 @@
     @media(max-width:700px){
       .evidence-register-section .chapter-header{align-items:flex-start}
       .evidence-register-add{margin-left:0}
-      .file-category-control{grid-template-columns:minmax(0,1fr) 42px}
+      .file-category-control{grid-template-columns:minmax(0,1fr) 32px}
       .file-category-new{grid-template-columns:1fr}
-      .file-category-save{justify-self:end;padding-inline:14px}
+      .file-category-new-actions{justify-content:flex-end}
       .file-viewer-overlay{padding:16px 45px}.file-viewer-card{height:calc(100vh - 32px);width:100%}.file-viewer-stage{padding:9px}.file-nav-arrow{width:38px;height:54px;border-radius:11px}.file-nav-arrow.prev{left:4px}.file-nav-arrow.next{right:4px}.docx-preview-host .docx-wrapper{gap:9px}
     }
   `;
@@ -316,11 +320,11 @@
         <label>Naam<input type="text" maxlength="200" data-file-title placeholder="Geef het bewijsstuk een duidelijke naam"></label>
         <div class="file-category-control">
           <label>Soort bewijsstuk<select data-file-category>${categoryOptions(initial)}</select></label>
-          <button class="file-category-add" type="button" data-category-toggle aria-label="Nieuwe categorie toevoegen" title="Nieuwe categorie toevoegen">+</button>
+          <button class="file-category-add" type="button" data-category-toggle aria-expanded="false" aria-label="Nieuwe categorie toevoegen" title="Nieuwe categorie toevoegen">+</button>
         </div>
         <div class="file-category-new" data-category-new>
           <label>Nieuwe categorie<input type="text" maxlength="80" data-category-name placeholder="Naam van de categorie"></label>
-          <button class="file-category-save" type="button" data-category-save>Toevoegen</button>
+          <div class="file-category-new-actions"><button class="file-category-cancel" type="button" data-category-cancel>Annuleren</button><button class="file-category-save" type="button" data-category-save>Toevoegen</button></div>
         </div>
         <label>Bestand<input type="file" data-file-input></label>
         <p class="file-upload-message" data-file-message></p>
@@ -334,16 +338,28 @@
     const newWrap=overlay.querySelector('[data-category-new]');
     const newInput=overlay.querySelector('[data-category-name]');
     const msg=overlay.querySelector('[data-file-message]');
+    const categoryToggle=overlay.querySelector('[data-category-toggle]');
+    const closeNewCategory=(focusToggle=true)=>{
+      newInput.value='';
+      newWrap.classList.remove('open');
+      categoryToggle?.setAttribute('aria-expanded','false');
+      msg.textContent='';
+      msg.classList.remove('error');
+      if(focusToggle) categoryToggle?.focus();
+    };
 
     overlay.querySelector('.file-dialog-close')?.addEventListener('click',close);
     overlay.querySelector('[data-file-cancel]')?.addEventListener('click',close);
     overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
     categorySelect?.addEventListener('change',()=>{overlay.dataset.uploadCategory=categorySelect.value;});
-    overlay.querySelector('[data-category-toggle]')?.addEventListener('click',()=>{
+    categoryToggle?.addEventListener('click',()=>{
       const open=!newWrap.classList.contains('open');
-      newWrap.classList.toggle('open',open);
-      if(open) requestAnimationFrame(()=>newInput?.focus());
+      if(!open){closeNewCategory(false);return;}
+      newWrap.classList.add('open');
+      categoryToggle.setAttribute('aria-expanded','true');
+      requestAnimationFrame(()=>newInput?.focus());
     });
+    overlay.querySelector('[data-category-cancel]')?.addEventListener('click',()=>closeNewCategory(true));
     overlay.querySelector('[data-category-save]')?.addEventListener('click',async()=>{
       const button=overlay.querySelector('[data-category-save]');
       button.disabled=true;
@@ -355,10 +371,11 @@
       overlay.dataset.uploadCategory=added;
       newInput.value='';
       newWrap.classList.remove('open');
+      categoryToggle?.setAttribute('aria-expanded','false');
     });
     newInput?.addEventListener('keydown',e=>{
       if(e.key==='Enter'){e.preventDefault();overlay.querySelector('[data-category-save]')?.click();}
-      else if(e.key==='Escape'){newWrap.classList.remove('open');}
+      else if(e.key==='Escape'){e.preventDefault();closeNewCategory(true);}
     });
     titleInput?.focus();
 
