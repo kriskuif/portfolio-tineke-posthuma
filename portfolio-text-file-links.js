@@ -6,9 +6,16 @@
   const DOCX_MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   const JSZIP_SRC='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
   const DOCX_PREVIEW_SRC='https://cdn.jsdelivr.net/npm/docx-preview@0.4.1/dist/docx-preview.min.js';
+  const LEGACY_CATEGORY_MAP={
+    evidence:'Bijlage',
+    attachment:'Bijlage',
+    feedback:'Feedback',
+    lessonprep:'Lesvoorbereiding'
+  };
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
   let docxLibraryPromise=null;
+  let chooserSequence=0;
 
   const style=document.createElement('style');
   style.textContent=`
@@ -18,7 +25,7 @@
     .text-file-link-head strong{font-family:Georgia,serif;font-size:1.08rem}
     .text-file-link-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:1.25rem;cursor:pointer}
     .text-file-link-body{padding:17px;overflow:auto;display:grid;gap:15px}
-    .text-file-link-intro{margin:0;color:#5d6963;font-size:.84rem}
+    .text-file-link-intro{margin:0;color:#5d6963;font-size:.84rem;line-height:1.55}
     .text-file-link-note{margin:-4px 0 0;padding:9px 11px;border-left:3px solid #7fa18f;border-radius:7px;background:#f1f6f2;color:#4d6257;font-size:.78rem}
     .text-file-link-selection{margin:0;padding:9px 11px;border-radius:10px;background:#f2f6f3;color:#294f40;font-size:.8rem;overflow-wrap:anywhere}
     .text-file-link-group{display:grid;gap:7px}
@@ -45,11 +52,16 @@
   `;
   document.head.appendChild(style);
 
-  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const publicUrl=path=>client.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   const normalizeIds=value=>String(value||'').split(',').map(id=>id.trim().toLowerCase()).filter((id,index,all)=>FILE_ID.test(id)&&all.indexOf(id)===index);
   const fileExt=item=>String(item?.file_name||'').split('.').pop().toLowerCase();
   const isDocx=item=>String(item?.mime_type||'').toLowerCase()===DOCX_MIME||fileExt(item)==='docx'||/\.docx$/i.test(String(item?.storage_path||''));
+  const normalizeCategory=value=>{
+    const raw=String(value||'').trim();
+    return LEGACY_CATEGORY_MAP[raw.toLowerCase()]||raw||'Overig';
+  };
+  const compareCategories=(a,b)=>String(a).localeCompare(String(b),'nl',{sensitivity:'base'});
 
   function loadExternalScript(src,test){
     if(test()) return Promise.resolve();
@@ -176,6 +188,10 @@
     render();
   }
 
+  function removeChooserOverlays(){
+    document.querySelectorAll('.text-file-link-overlay[data-link-chooser="1"]').forEach(node=>node.remove());
+  }
+
   async function openLinkedFiles(ids){
     const cleanIds=normalizeIds(ids);
     if(!cleanIds.length) return;
@@ -187,8 +203,10 @@
       const byId=new Map((data||[]).map(item=>[String(item.id).toLowerCase(),item]));
       const ordered=cleanIds.map(id=>byId.get(id)).filter(Boolean);
       if(!ordered.length){
+        removeChooserOverlays();
         const overlay=document.createElement('div');
         overlay.className='text-file-link-overlay';
+        overlay.dataset.linkChooser='1';
         overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Bestand niet gevonden</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">De gekoppelde documenten bestaan niet meer.</p></div></section>';
         document.body.appendChild(overlay);
         overlay.querySelector('.text-file-link-close')?.addEventListener('click',()=>overlay.remove());
@@ -201,44 +219,66 @@
   }
 
   function renderGroup(title,items,selectedSet){
-    if(!items.length) return `<section class="text-file-link-group"><h4>${esc(title)}</h4><p class="text-file-link-empty">Nog geen bestanden toegevoegd.</p></section>`;
     return `<section class="text-file-link-group"><h4>${esc(title)}</h4>${items.map(item=>`<label class="text-file-choice"><input type="checkbox" value="${item.id}" data-link-file-check${selectedSet.has(String(item.id).toLowerCase())?' checked':''}><span>${esc(item.title)}</span></label>`).join('')}</section>`;
   }
 
+  function groupedRows(rows){
+    const groups=new Map();
+    rows.forEach(row=>{
+      const category=normalizeCategory(row.category);
+      if(!groups.has(category)) groups.set(category,[]);
+      groups.get(category).push(row);
+    });
+    return [...groups.entries()].sort(([a],[b])=>compareCategories(a,b));
+  }
+
   async function openChooser(detail){
+    const sequence=++chooserSequence;
+    removeChooserOverlays();
+
     const overlay=document.createElement('div');
     overlay.className='text-file-link-overlay';
+    overlay.dataset.linkChooser='1';
+    let keyHandler=null;
     const close=(restore=true)=>{
+      if(keyHandler) document.removeEventListener('keydown',keyHandler);
       detail?.clearSelectionPreview?.();
       overlay.remove();
       if(restore) requestAnimationFrame(()=>detail?.restoreSelection?.());
     };
+    keyHandler=e=>{if(e.key==='Escape') close(true);};
+    document.addEventListener('keydown',keyHandler);
+    overlay.addEventListener('click',e=>{if(e.target===overlay) close(true);});
+
     if(!detail?.hasSelection){
-      overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel aan document</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Selecteer eerst de tekst die je aan één of meer documenten wilt koppelen.</p></div></section>';
+      overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel bewijsstuk/bijlage</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Selecteer eerst de tekst die je aan één of meer documenten wilt koppelen.</p></div></section>';
       document.body.appendChild(overlay);
       overlay.querySelector('.text-file-link-close')?.addEventListener('click',()=>close(false));
       return;
     }
-    overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel aan document</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Bestanden laden…</p></div></section>';
+
+    overlay.innerHTML='<section class="text-file-link-dialog" role="dialog" aria-modal="true"><header class="text-file-link-head"><strong>Koppel bewijsstuk/bijlage</strong><button class="text-file-link-close" type="button" aria-label="Sluiten">×</button></header><div class="text-file-link-body"><p class="text-file-link-intro">Bestanden laden…</p></div></section>';
     document.body.appendChild(overlay);
     overlay.querySelector('.text-file-link-close')?.addEventListener('click',()=>close(true));
+
     try{
       const rows=await fetchFiles();
-      const evidence=rows.filter(row=>row.category==='evidence');
-      const attachments=rows.filter(row=>row.category==='attachment');
-      const feedback=rows.filter(row=>row.category==='feedback');
-      const lessonprep=rows.filter(row=>row.category==='lessonprep');
+      if(sequence!==chooserSequence||!overlay.isConnected) return;
+      const body=overlay.querySelector('.text-file-link-body');
+
+      if(!rows.length){
+        body.innerHTML='<p class="text-file-link-intro">Bewijsstukkenregister is leeg. Upload je bestanden om naar te kunnen verwijzen.</p>';
+        return;
+      }
+
       const existingIds=normalizeIds((detail.existingFileIds||[]).join(','));
       const selectedSet=new Set(existingIds);
-      const body=overlay.querySelector('.text-file-link-body');
+      const categoryMarkup=groupedRows(rows).map(([category,items])=>renderGroup(category,items,selectedSet)).join('');
       body.innerHTML=`
-        <p class="text-file-link-intro">Selecteer één of meer documenten die je aan deze tekst wilt koppelen.</p>
+        <p class="text-file-link-intro">Selecteer één of meer documenten uit het bewijsstukkenregister die je aan deze tekst wilt koppelen.</p>
         ${existingIds.length?'<p class="text-file-link-note">Bestaande koppelingen in deze selectie zijn al aangevinkt. Als maar een deel van de geselecteerde tekst al gekoppeld was, geldt je keuze na Opslaan voor de hele geselecteerde tekst.</p>':''}
         <p class="text-file-link-selection"><strong>Geselecteerde tekst:</strong> ${esc(detail.selectedText||'')}</p>
-        ${renderGroup('Bewijsstukken',evidence,selectedSet)}
-        ${renderGroup('Bijlagen',attachments,selectedSet)}
-        ${renderGroup('Feedback',feedback,selectedSet)}
-        ${renderGroup('Lesvoorbereidingen',lessonprep,selectedSet)}
+        ${categoryMarkup}
         <div class="text-file-link-actions">
           <button class="text-file-link-btn secondary" type="button" data-link-cancel>Annuleren</button>
           <button class="text-file-link-btn" type="button" data-link-apply>Koppelen</button>
@@ -272,6 +312,7 @@
       update();
     }catch(err){
       console.error('Bestanden voor tekstkoppeling laden mislukt:',err);
+      if(sequence!==chooserSequence||!overlay.isConnected) return;
       const body=overlay.querySelector('.text-file-link-body');
       if(body) body.innerHTML='<p class="text-file-link-intro">De documenten konden niet worden geladen.</p>';
     }
