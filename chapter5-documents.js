@@ -59,13 +59,15 @@
           ]}
         ];
       }
-    }catch(err){console.error('Portfolio-indeling aanpassen mislukt:',err)}
+    }catch(err){
+      console.error('Portfolio-indeling aanpassen mislukt:',err);
+    }
   }
 
   function syncStaticLabels(){
     const setText=(selector,text)=>{
       const el=document.querySelector(selector);
-      if(el) el.textContent=text;
+      if(el && el.textContent!==text) el.textContent=text;
     };
 
     setText('.nav a[href="#hoofdstuk-2"] span:last-child','Doelgroep');
@@ -78,37 +80,37 @@
     const profileCard=overviewCards[0];
     if(profileCard){
       const p=profileCard.querySelector('p');
-      if(p) p.textContent='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?';
+      if(p && p.textContent!=='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?') p.textContent='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?';
       const tags=profileCard.querySelectorAll('.mini-tags span');
-      if(tags[0]) tags[0].textContent='Profiel als wandelcoach';
-      if(tags[1]) tags[1].textContent='Persoonlijke leerdoelen';
+      if(tags[0] && tags[0].textContent!=='Profiel als wandelcoach') tags[0].textContent='Profiel als wandelcoach';
+      if(tags[1] && tags[1].textContent!=='Persoonlijke leerdoelen') tags[1].textContent='Persoonlijke leerdoelen';
     }
 
     const doelgroepCard=overviewCards[1];
     if(doelgroepCard){
       const title=doelgroepCard.querySelector('h4');
-      if(title) title.textContent='Doelgroep';
+      if(title && title.textContent!=='Doelgroep') title.textContent='Doelgroep';
       const p=doelgroepCard.querySelector('p');
-      if(p) p.textContent='Wie zijn mijn deelnemers en wat is hun beginsituatie?';
+      if(p && p.textContent!=='Wie zijn mijn deelnemers en wat is hun beginsituatie?') p.textContent='Wie zijn mijn deelnemers en wat is hun beginsituatie?';
       const tags=doelgroepCard.querySelectorAll('.mini-tags span');
-      if(tags[0]) tags[0].textContent='Doelgroep';
+      if(tags[0] && tags[0].textContent!=='Doelgroep') tags[0].textContent='Doelgroep';
       if(tags[1]) tags[1].remove();
     }
 
     const planningCard=overviewCards[2];
     if(planningCard){
       const p=planningCard.querySelector('p');
-      if(p) p.textContent='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?';
+      if(p && p.textContent!=='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?') p.textContent='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?';
       const tags=planningCard.querySelectorAll('.mini-tags span');
-      if(tags[0]) tags[0].textContent='Mijn logboek';
+      if(tags[0] && tags[0].textContent!=='Mijn logboek') tags[0].textContent='Mijn logboek';
     }
 
     const evaluatieCard=overviewCards[4];
     if(evaluatieCard){
       const p=evaluatieCard.querySelector('p');
-      if(p) p.textContent='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?';
+      if(p && p.textContent!=='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?') p.textContent='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?';
       const tags=evaluatieCard.querySelectorAll('.mini-tags span');
-      if(tags[0]) tags[0].textContent='Verslaglegging lesdagen';
+      if(tags[0] && tags[0].textContent!=='Verslaglegging lesdagen') tags[0].textContent='Verslaglegging lesdagen';
     }
   }
 
@@ -137,7 +139,7 @@
     .chapter5-repeat-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:1.25rem;cursor:pointer}
     .chapter5-repeat-body{padding:17px;overflow:auto;display:grid;gap:14px}
     .chapter5-repeat-editor-list{display:grid;gap:14px}
-    .chapter5-repeat-editor-item{position:relative;display:grid;gap:9px;padding:14px;border:1px solid #dce5df;border-radius:14px;background:#fbfcfb}
+    .chapter5-repeat-editor-item{display:grid;gap:9px;padding:14px;border:1px solid #dce5df;border-radius:14px;background:#fbfcfb}
     .chapter5-repeat-editor-item input,.chapter5-repeat-editor-item textarea{width:100%;border:1px solid #ced9d2;border-radius:10px;background:#fff;color:#263b32;font:inherit;padding:10px 11px;box-sizing:border-box}
     .chapter5-repeat-editor-item textarea{min-height:135px;resize:vertical;line-height:1.5}
     .chapter5-repeat-editor-item input:focus,.chapter5-repeat-editor-item textarea:focus{outline:2px solid rgba(47,122,97,.18);border-color:#78a28f}
@@ -155,12 +157,7 @@
 
   const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  function cleanEntry(value){
-    return {
-      title:String(value?.title||'').trim(),
-      body:String(value?.body||'').trim()
-    };
-  }
+  const cleanEntry=value=>({title:String(value?.title||'').trim(),body:String(value?.body||'').trim()});
 
   function parseEntries(raw){
     const value=String(raw||'').trim();
@@ -193,13 +190,13 @@
       const special=topic.fields.map(([id])=>fieldToCategory.get(id)).find(Boolean);
       if(special){
         if(entries[special].some(item=>item.title||item.body)) count+=1;
-        return;
+      }else if(topic.fields.some(([id])=>String(typeof state!=='undefined'?state?.values?.[id]||'':'').trim())){
+        count+=1;
       }
-      const filled=topic.fields.some(([id])=>String(typeof state!=='undefined'?state?.values?.[id]||'':'').trim());
-      if(filled) count+=1;
     });
     const progress=document.getElementById('progress-5');
-    if(progress) progress.textContent=`${count} van ${groups[4].topics.length} onderdelen ingevuld`;
+    const text=`${count} van ${groups[4].topics.length} onderdelen ingevuld`;
+    if(progress && progress.textContent!==text) progress.textContent=text;
   }
 
   function renderCategory(category){
@@ -224,16 +221,17 @@
     if(badge && badge.textContent!==badgeText) badge.textContent=badgeText;
 
     const current=card.querySelector('.topic-edit-btn');
+    const buttonText=filled?'Aanpassen':'Invullen';
     if(current && current.dataset.repeatableEditor!==category){
       const button=current.cloneNode(true);
       button.removeAttribute('data-edit-topic');
       button.removeAttribute('data-file-upload-button');
       button.dataset.repeatableEditor=category;
-      button.textContent=filled?'Aanpassen':'Invullen';
+      button.textContent=buttonText;
       current.replaceWith(button);
       button.addEventListener('click',()=>openEditor(category));
-    }else if(current){
-      current.textContent=filled?'Aanpassen':'Invullen';
+    }else if(current && current.textContent!==buttonText){
+      current.textContent=buttonText;
     }
   }
 
@@ -257,9 +255,9 @@
         wrapper.querySelector('[data-repeat-title]').value='';
         wrapper.querySelector('[data-repeat-body]').value='';
         wrapper.querySelector('[data-repeat-title]').focus();
-        return;
+      }else{
+        wrapper.remove();
       }
-      wrapper.remove();
     });
     return wrapper;
   }
@@ -271,37 +269,29 @@
     overlay.className='chapter5-repeat-overlay';
     overlay.innerHTML=`
       <section class="chapter5-repeat-dialog" role="dialog" aria-modal="true" aria-label="${esc(cfg.title)} aanpassen">
-        <header class="chapter5-repeat-head">
-          <strong>${esc(cfg.title)}</strong>
-          <button class="chapter5-repeat-close" type="button" aria-label="Sluiten">×</button>
-        </header>
+        <header class="chapter5-repeat-head"><strong>${esc(cfg.title)}</strong><button class="chapter5-repeat-close" type="button" aria-label="Sluiten">×</button></header>
         <div class="chapter5-repeat-body">
           <div class="chapter5-repeat-editor-list" data-repeat-editor-list></div>
           <button class="chapter5-repeat-add" type="button" data-repeat-add>Nieuwe invoer +</button>
           <p class="chapter5-repeat-message" data-repeat-message></p>
-          <div class="chapter5-repeat-actions">
-            <button class="secondary" type="button" data-repeat-cancel>Annuleren</button>
-            <button type="button" data-repeat-save>Opslaan</button>
-          </div>
+          <div class="chapter5-repeat-actions"><button class="secondary" type="button" data-repeat-cancel>Annuleren</button><button type="button" data-repeat-save>Opslaan</button></div>
         </div>
       </section>`;
     document.body.appendChild(overlay);
 
     const list=overlay.querySelector('[data-repeat-editor-list]');
-    const initial=entries[category].length?entries[category]:[{title:'',body:''}];
-    initial.forEach(item=>list.appendChild(makeEditorItem(item)));
+    (entries[category].length?entries[category]:[{title:'',body:''}]).forEach(item=>list.appendChild(makeEditorItem(item)));
 
     const close=()=>overlay.remove();
     overlay.querySelector('.chapter5-repeat-close')?.addEventListener('click',close);
     overlay.querySelector('[data-repeat-cancel]')?.addEventListener('click',close);
-    overlay.addEventListener('click',event=>{if(event.target===overlay) close()});
+    overlay.addEventListener('click',event=>{if(event.target===overlay) close();});
     overlay.querySelector('[data-repeat-add]')?.addEventListener('click',()=>{
       const item=makeEditorItem();
       list.appendChild(item);
       item.querySelector('[data-repeat-title]')?.focus();
       item.scrollIntoView({behavior:'smooth',block:'nearest'});
     });
-
     requestAnimationFrame(()=>list.querySelector('[data-repeat-title]')?.focus());
 
     overlay.querySelector('[data-repeat-save]')?.addEventListener('click',async event=>{
@@ -311,22 +301,19 @@
         title:item.querySelector('[data-repeat-title]')?.value?.trim()||'',
         body:item.querySelector('[data-repeat-body]')?.value?.trim()||''
       }));
-      const partial=draft.find(item=>(item.title&&!item.body)||(!item.title&&item.body));
-      if(partial){
+      if(draft.some(item=>(item.title&&!item.body)||(!item.title&&item.body))){
         message.textContent='Vul bij elke invoer zowel een titel als de hoofdtekst in.';
         message.classList.add('error');
         return;
       }
       const clean=draft.filter(item=>item.title&&item.body);
-
       saveButton.disabled=true;
       message.classList.remove('error');
       message.textContent='Opslaan…';
+
       try{
         const {data:sessionData}=await client.auth.getSession();
-        const session=sessionData?.session;
-        if(!session) throw new Error('Je bent niet meer ingelogd. Log opnieuw in.');
-
+        if(!sessionData?.session) throw new Error('Je bent niet meer ingelogd. Log opnieuw in.');
         const value=serializeEntries(clean);
         const {error}=await client.from('portfolio_content').upsert([{id:cfg.fieldId,value}],{onConflict:'id'});
         if(error) throw error;
@@ -335,7 +322,6 @@
         if(typeof state!=='undefined' && state?.values) state.values[cfg.fieldId]=value;
         if(typeof persistState==='function') persistState(`${cfg.title} opgeslagen op website`);
         else if(typeof setStatus==='function') setStatus(`${cfg.title} opgeslagen op website`,'saved');
-
         renderSections();
         message.textContent='Opgeslagen.';
         setTimeout(close,300);
@@ -368,17 +354,22 @@
   }
 
   const topics5=document.getElementById('topics-5');
+  let observer=null;
   if(topics5){
     let scheduled=false;
-    const observer=new MutationObserver(()=>{
+    const observe=()=>observer?.observe(topics5,{childList:true,subtree:true});
+    observer=new MutationObserver(()=>{
       if(scheduled) return;
       scheduled=true;
-      queueMicrotask(()=>{
+      setTimeout(()=>{
         scheduled=false;
+        observer.disconnect();
+        hydrateFromState();
         renderSections();
-      });
+        observe();
+      },0);
     });
-    observer.observe(topics5,{childList:true,subtree:true});
+    observe();
   }
 
   loadEntries();
