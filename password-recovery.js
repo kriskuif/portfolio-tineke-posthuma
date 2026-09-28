@@ -5,6 +5,19 @@
   const client = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_KEY);
   if (!client) return;
 
+  // Keep exactly one Supabase client for this project in the page. All scripts
+  // loaded after this file still call createClient(), but receive this same
+  // instance so they cannot race each other while rotating refresh tokens.
+  window.portfolioSupabaseClient = client;
+  if (!window.__portfolioSupabaseSingletonPatched) {
+    const createClientWithTabStorage = window.supabase.createClient.bind(window.supabase);
+    window.supabase.createClient = (url, key, options = {}) => {
+      if (url === SUPABASE_URL && key === SUPABASE_KEY) return window.portfolioSupabaseClient;
+      return createClientWithTabStorage(url, key, options);
+    };
+    window.__portfolioSupabaseSingletonPatched = true;
+  }
+
   const style = document.createElement('style');
   style.textContent = `
     .password-recovery-overlay{position:fixed;inset:0;z-index:3400;background:rgba(20,38,31,.40);display:grid;place-items:center;padding:20px}
