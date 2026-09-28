@@ -1,5 +1,6 @@
 /* Cross-origin isolation helper for the in-browser LibreOffice WASM converter.
-   Kept at the site root so it can control the complete GitHub Pages app. */
+   Uses COEP require-corp because Safari does not reliably expose
+   crossOriginIsolated with the credentialless variant used previously. */
 'use strict';
 
 self.addEventListener('install',()=>self.skipWaiting());
@@ -9,16 +10,12 @@ self.addEventListener('fetch',event=>{
   const request=event.request;
   if(request.cache==='only-if-cached'&&request.mode!=='same-origin') return;
 
-  const outgoing=(request.mode==='no-cors')
-    ? new Request(request,{credentials:'omit'})
-    : request;
-
   event.respondWith(
-    fetch(outgoing).then(response=>{
+    fetch(request).then(response=>{
       if(!response||response.status===0) return response;
       const headers=new Headers(response.headers);
       headers.set('Cross-Origin-Opener-Policy','same-origin');
-      headers.set('Cross-Origin-Embedder-Policy','credentialless');
+      headers.set('Cross-Origin-Embedder-Policy','require-corp');
       headers.set('Cross-Origin-Resource-Policy','cross-origin');
       return new Response(response.body,{
         status:response.status,
