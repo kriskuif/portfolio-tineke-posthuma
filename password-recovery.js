@@ -20,10 +20,13 @@
 
   // Auth callbacks must return immediately. Some modules perform database
   // requests after an auth event; deferring those callbacks avoids waiting on
-  // the auth lock while signInWithPassword() is still finishing.
+  // the auth lock while signInWithPassword() is still finishing. TOKEN_REFRESHED
+  // is intentionally not forwarded: several modules re-check editor access on
+  // every auth event, which otherwise creates a refresh -> query -> refresh loop.
   if (!window.__portfolioSupabaseAuthCallbacksDeferred) {
     const originalOnAuthStateChange = client.auth.onAuthStateChange.bind(client.auth);
     client.auth.onAuthStateChange = (callback) => originalOnAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED') return;
       setTimeout(() => {
         try {
           const result = callback(event, session);
