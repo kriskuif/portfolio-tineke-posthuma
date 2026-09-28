@@ -9,7 +9,7 @@
   const LO_CDN='https://erseco.github.io/libreoffice-document-converter/';
   const LO_MODULE=`${LO_CDN}dist/browser.js`;
   const JSZIP_SRC='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-  const RELOAD_KEY='portfolio-libreoffice-isolation-reload-v2';
+  const RELOAD_KEY='portfolio-libreoffice-isolation-reload-v3';
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
 
@@ -131,7 +131,7 @@
     }
     if(!window.isSecureContext||!navigator.serviceWorker) return;
     try{
-      const swUrl=new URL('libreoffice-coi-serviceworker.js?v=20260928-2',document.baseURI).href;
+      const swUrl=new URL('libreoffice-coi-serviceworker.js?v=20260928-3',document.baseURI).href;
       await navigator.serviceWorker.register(swUrl,{scope:'./'});
       await navigator.serviceWorker.ready;
       let reloaded='';
