@@ -9,7 +9,7 @@
   const LO_CDN='https://erseco.github.io/libreoffice-document-converter/';
   const LO_MODULE=`${LO_CDN}dist/browser.js`;
   const JSZIP_SRC='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-  const RELOAD_KEY='portfolio-libreoffice-isolation-reload-v1';
+  const RELOAD_KEY='portfolio-libreoffice-isolation-reload-v2';
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
 
@@ -99,7 +99,7 @@
     return {xml:repaired,changes};
   }
 
-  async function repairDocxOnly(bytes){
+  async function repairOpenXmlPackage(bytes){
     const JSZip=await getJSZip();
     const zip=await JSZip.loadAsync(bytes);
     let changes=0;
@@ -126,7 +126,7 @@
     }
     if(!window.isSecureContext||!navigator.serviceWorker) return;
     try{
-      const swUrl=new URL('libreoffice-coi-serviceworker.js?v=20260928-1',document.baseURI).href;
+      const swUrl=new URL('libreoffice-coi-serviceworker.js?v=20260928-2',document.baseURI).href;
       await navigator.serviceWorker.register(swUrl,{scope:'./'});
       await navigator.serviceWorker.ready;
       let reloaded='';
@@ -154,7 +154,7 @@
       const WorkerBrowserConverter=mod.WorkerBrowserConverter;
       if(typeof WorkerBrowserConverter!=='function') throw new Error('LibreOffice-module is niet beschikbaar.');
       const converter=new WorkerBrowserConverter({
-        sofficeJs:`${LO_CDN}wasm/soffice.js`,
+        sofficeJs:new URL('libreoffice-soffice-proxy.js',document.baseURI).href,
         sofficeWasm:`${LO_CDN}wasm/soffice.wasm`,
         sofficeData:`${LO_CDN}wasm/soffice.data`,
         sofficeWorkerJs:new URL('libreoffice-soffice-worker-proxy.js',document.baseURI).href,
@@ -176,9 +176,8 @@
   }
 
   async function convertWithLibreOffice(file,msg){
-    const extension=extFromName(file.name);
     let bytes=new Uint8Array(await file.arrayBuffer());
-    if(extension==='docx') bytes=await repairDocxOnly(bytes);
+    bytes=await repairOpenXmlPackage(bytes);
 
     const converter=await getLibreOfficeConverter(msg);
     setMessage(msg,'Document met LibreOffice omzetten naar PDF…','busy');
