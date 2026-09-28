@@ -120,6 +120,11 @@
   }
 
   async function bootstrapIsolation(){
+    try{
+      const {data:sessionData}=await client.auth.getSession();
+      if(!sessionData?.session) return;
+    }catch(_err){return;}
+
     if(window.crossOriginIsolated&&typeof SharedArrayBuffer!=='undefined'){
       try{sessionStorage.removeItem(RELOAD_KEY);}catch(_err){}
       return;
