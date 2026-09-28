@@ -3,8 +3,12 @@
   const SUPABASE_KEY='sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
   const BUCKET='portfolio-documents';
   const FILE_ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const DOCX_MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const JSZIP_SRC='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+  const DOCX_PREVIEW_SRC='https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js';
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
+  let docxLibraryPromise=null;
 
   const style=document.createElement('style');
   style.textContent=`
@@ -32,12 +36,54 @@
     .text-file-link-btn:disabled{opacity:.45;cursor:not-allowed}
     .linked-file-viewer .file-viewer-card{width:min(92vw,880px)}
     .linked-file-viewer.single-linked-file .file-viewer-count,.linked-file-viewer.single-linked-file .file-nav-arrow{display:none!important}
+    .linked-file-viewer .file-paper.docx-paper{width:min(100%,780px);min-height:100%;aspect-ratio:auto;background:transparent;box-shadow:none;overflow:visible}
+    .linked-file-viewer .docx-preview-host{width:100%;min-height:100%}
+    .linked-file-viewer .docx-preview-host .docx-wrapper{background:transparent!important;padding:0!important;display:grid;gap:14px}
+    .linked-file-viewer .docx-preview-host section.docx{margin:0 auto!important;box-shadow:0 5px 24px rgba(24,39,32,.18)!important}
+    .linked-file-viewer .docx-preview-loading,.linked-file-viewer .docx-preview-error{width:100%;min-height:420px;display:grid;place-items:center;background:#fff;color:#607068;text-align:center;padding:30px;box-shadow:0 5px 24px rgba(24,39,32,.14)}
+    .linked-file-viewer .docx-preview-error a{color:#1f5e4a;font-weight:850}
   `;
   document.head.appendChild(style);
 
-  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const publicUrl=path=>client.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   const normalizeIds=value=>String(value||'').split(',').map(id=>id.trim().toLowerCase()).filter((id,index,all)=>FILE_ID.test(id)&&all.indexOf(id)===index);
+  const fileExt=item=>String(item?.file_name||'').split('.').pop().toLowerCase();
+  const isDocx=item=>String(item?.mime_type||'').toLowerCase()===DOCX_MIME||fileExt(item)==='docx';
+
+  function loadExternalScript(src,test){
+    if(test()) return Promise.resolve();
+    const existing=[...document.scripts].find(script=>script.src===src);
+    if(existing){
+      return new Promise((resolve,reject)=>{
+        if(test()){resolve();return;}
+        existing.addEventListener('load',()=>test()?resolve():reject(new Error('Bibliotheek is niet beschikbaar.')),{once:true});
+        existing.addEventListener('error',()=>reject(new Error('Bibliotheek kon niet worden geladen.')),{once:true});
+      });
+    }
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src=src;
+      script.async=true;
+      script.onload=()=>test()?resolve():reject(new Error('Bibliotheek is niet beschikbaar.'));
+      script.onerror=()=>reject(new Error('Bibliotheek kon niet worden geladen.'));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function ensureDocxLibrary(){
+    if(window.docx?.renderAsync) return window.docx;
+    if(docxLibraryPromise) return docxLibraryPromise;
+    docxLibraryPromise=(async()=>{
+      await loadExternalScript(JSZIP_SRC,()=>!!window.JSZip);
+      await loadExternalScript(DOCX_PREVIEW_SRC,()=>!!window.docx?.renderAsync);
+      return window.docx;
+    })().catch(err=>{
+      docxLibraryPromise=null;
+      throw err;
+    });
+    return docxLibraryPromise;
+  }
 
   async function fetchFiles(){
     const {data,error}=await client.from('portfolio_files')
@@ -51,17 +97,50 @@
   function fileViewerContent(item){
     const url=publicUrl(item.storage_path);
     const mime=String(item.mime_type||'').toLowerCase();
-    const ext=String(item.file_name||'').split('.').pop().toLowerCase();
+    const ext=fileExt(item);
     if(mime.startsWith('image/')||['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return `<img src="${esc(url)}" alt="${esc(item.title)}">`;
     if(mime==='application/pdf'||ext==='pdf') return `<iframe src="${esc(url)}#view=FitH" title="${esc(item.title)}"></iframe>`;
     if(mime.startsWith('text/')||['txt','html','htm'].includes(ext)) return `<iframe src="${esc(url)}" title="${esc(item.title)}"></iframe>`;
     return `<div class="file-fallback"><div><p>Dit bestandstype kan de browser niet altijd rechtstreeks in het venster weergeven.</p><p><a href="${esc(url)}" target="_blank" rel="noopener">Bestand openen</a></p></div></div>`;
   }
 
+  async function renderDocx(item,paper,renderId){
+    const url=publicUrl(item.storage_path);
+    paper.classList.add('docx-paper');
+    paper.innerHTML='<div class="docx-preview-loading">Word-document laden…</div>';
+    try{
+      const docx=await ensureDocxLibrary();
+      const response=await fetch(url);
+      if(!response.ok) throw new Error(`Bestand ophalen mislukt (${response.status}).`);
+      const blob=await response.blob();
+      if(!paper.isConnected||paper.dataset.renderId!==renderId) return;
+      const host=document.createElement('div');
+      host.className='docx-preview-host';
+      paper.replaceChildren(host);
+      await docx.renderAsync(blob,host,host,{
+        inWrapper:true,
+        breakPages:true,
+        ignoreWidth:false,
+        ignoreHeight:false,
+        ignoreFonts:false,
+        renderHeaders:true,
+        renderFooters:true,
+        renderFootnotes:true,
+        renderEndnotes:true,
+        useBase64URL:true
+      });
+    }catch(err){
+      console.error('Gekoppeld Word-document kon niet worden weergegeven:',err);
+      if(!paper.isConnected||paper.dataset.renderId!==renderId) return;
+      paper.innerHTML=`<div class="docx-preview-error"><div><p>Het Word-document kon niet in de ingebouwde weergave worden geladen.</p><p><a href="${esc(url)}" target="_blank" rel="noopener">Bestand openen</a></p></div></div>`;
+    }
+  }
+
   function openLinkedViewer(items){
     if(!items.length) return;
     document.querySelector('.linked-file-viewer')?.remove();
     let current=0;
+    let renderSequence=0;
     const overlay=document.createElement('div');
     overlay.className=`file-viewer-overlay linked-file-viewer${items.length===1?' single-linked-file':''}`;
     overlay.innerHTML=`
@@ -76,14 +155,19 @@
 
     const render=()=>{
       const item=items[current];
+      const paper=overlay.querySelector('[data-linked-paper]');
+      const renderId=String(++renderSequence);
+      paper.dataset.renderId=renderId;
+      paper.classList.remove('docx-paper');
       overlay.querySelector('[data-linked-title]').textContent=item.title;
-      overlay.querySelector('[data-linked-paper]').innerHTML=fileViewerContent(item);
+      if(isDocx(item)) renderDocx(item,paper,renderId);
+      else paper.innerHTML=fileViewerContent(item);
       overlay.querySelector('[data-linked-count]').textContent=`${current+1} / ${items.length}`;
       const stage=overlay.querySelector('.file-viewer-stage');
       if(stage) stage.scrollTop=0;
     };
     const move=delta=>{current=(current+delta+items.length)%items.length;render()};
-    const close=()=>{document.removeEventListener('keydown',keyHandler);overlay.remove()};
+    const close=()=>{renderSequence+=1;document.removeEventListener('keydown',keyHandler);overlay.remove()};
     const keyHandler=e=>{
       if(e.key==='Escape') close();
       else if(items.length>1 && e.key==='ArrowLeft') move(-1);
