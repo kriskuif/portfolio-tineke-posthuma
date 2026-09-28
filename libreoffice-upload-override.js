@@ -6,22 +6,19 @@
   const BUCKET='portfolio-documents';
   const MAX_BYTES=25*1024*1024;
   const OFFICE_EXTENSIONS=new Set(['docx','xlsx','pptx']);
+  const LO_CDN='https://erseco.github.io/libreoffice-document-converter/';
+  const LO_MODULE=`${LO_CDN}dist/browser.js`;
   const JSZIP_SRC='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-  const CONVERTER_ORIGIN='https://erseco.github.io';
-  const CONVERTER_URL=`${CONVERTER_ORIGIN}/document-converter/?origins=${encodeURIComponent(location.origin)}`;
-  const LEGACY_SW_NAME='libreoffice-coi-serviceworker.js';
-  const LEGACY_RELOAD_KEY='portfolio-libreoffice-legacy-sw-removed-v1';
+  const SW_URL='libreoffice-coi-serviceworker.js?v=20260928-5';
+  const RELOAD_KEY='portfolio-libreoffice-isolation-reload-v5';
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
 
   let pendingCategory='';
   let jszipPromise=null;
-  let converterFrame=null;
-  let converterReadyPromise=null;
-  let resolveConverterReady=null;
-  let rejectConverterReady=null;
-  let readyTimer=null;
-  const pendingRequests=new Map();
+  let converterPromise=null;
+  let progressMessage=null;
+  let isolationPromise=null;
 
   const extFromName=name=>{
     const clean=String(name||'').split(/[?#]/)[0];
@@ -42,6 +39,28 @@
     else delete node.dataset.conversionMessage;
   }
 
+  function withTimeout(promise,ms,message){
+    return new Promise((resolve,reject)=>{
+      let settled=false;
+      const timer=setTimeout(()=>{
+        if(settled) return;
+        settled=true;
+        reject(new Error(message));
+      },ms);
+      Promise.resolve(promise).then(value=>{
+        if(settled) return;
+        settled=true;
+        clearTimeout(timer);
+        resolve(value);
+      },error=>{
+        if(settled) return;
+        settled=true;
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  }
+
   function loadScript(src,test){
     if(test()) return Promise.resolve();
     const existing=[...document.scripts].find(script=>script.src===src);
@@ -56,6 +75,7 @@
       const script=document.createElement('script');
       script.src=src;
       script.async=true;
+      script.crossOrigin='anonymous';
       script.onload=()=>test()?resolve():reject(new Error('Bibliotheek is niet beschikbaar.'));
       script.onerror=()=>reject(new Error('Bibliotheek kon niet worden geladen.'));
       document.head.appendChild(script);
@@ -124,148 +144,147 @@
     return zip.generateAsync({type:'uint8array',compression:'DEFLATE',compressionOptions:{level:6}});
   }
 
-  async function removeLegacyIsolationWorker(){
-    if(!navigator.serviceWorker?.getRegistrations) return;
+  function hasIsolation(){
+    return window.crossOriginIsolated&&typeof SharedArrayBuffer!=='undefined';
+  }
+
+  async function ensureIsolation({silent=false}={}){
+    if(hasIsolation()){
+      try{sessionStorage.removeItem(RELOAD_KEY);}catch(_err){}
+      return true;
+    }
+    if(isolationPromise) return isolationPromise;
+    isolationPromise=(async()=>{
+      if(!window.isSecureContext||!navigator.serviceWorker){
+        if(silent) return false;
+        throw new Error('Deze browser kan de beveiligde LibreOffice-omgeving niet starten.');
+      }
+      console.info('[LibreOffice] Browserisolatie activeren.');
+      const registration=await navigator.serviceWorker.register(new URL(SW_URL,document.baseURI).href,{
+        scope:'./',
+        updateViaCache:'none'
+      });
+      try{await registration.update();}catch(_err){}
+      await navigator.serviceWorker.ready;
+
+      if(hasIsolation()){
+        try{sessionStorage.removeItem(RELOAD_KEY);}catch(_err){}
+        return true;
+      }
+
+      let reloaded='';
+      try{reloaded=sessionStorage.getItem(RELOAD_KEY)||'';}catch(_err){}
+      if(reloaded!=='1'){
+        try{sessionStorage.setItem(RELOAD_KEY,'1');}catch(_err){}
+        console.info('[LibreOffice] Pagina eenmalig herladen om browserisolatie toe te passen.');
+        window.location.reload();
+        return false;
+      }
+
+      if(silent) return false;
+      throw new Error('LibreOffice-browserisolatie werd na herladen niet actief.');
+    })().finally(()=>{isolationPromise=null;});
+    return isolationPromise;
+  }
+
+  async function bootstrapIsolationForSignedInEditor(){
     try{
-      const registrations=await navigator.serviceWorker.getRegistrations();
-      let removed=false;
-      for(const registration of registrations){
-        const urls=[registration.active?.scriptURL,registration.waiting?.scriptURL,registration.installing?.scriptURL].filter(Boolean);
-        if(!urls.some(url=>url.includes(LEGACY_SW_NAME))) continue;
-        const ok=await registration.unregister();
-        removed=removed||ok;
-      }
-      if(!removed||!navigator.serviceWorker.controller) return;
-      let alreadyReloaded='';
-      try{alreadyReloaded=sessionStorage.getItem(LEGACY_RELOAD_KEY)||'';}catch(_err){}
-      if(alreadyReloaded==='1') return;
-      try{sessionStorage.setItem(LEGACY_RELOAD_KEY,'1');}catch(_err){}
-      window.location.reload();
+      const {data}=await client.auth.getSession();
+      if(!data?.session) return;
+      await ensureIsolation({silent:true});
     }catch(err){
-      console.warn('[LibreOffice] Oude browserisolatie kon niet automatisch worden verwijderd:',err);
+      console.warn('[LibreOffice] Automatische voorbereiding kon niet worden afgerond:',err);
     }
   }
 
-  removeLegacyIsolationWorker();
+  bootstrapIsolationForSignedInEditor();
+  client.auth.onAuthStateChange?.((_event,session)=>{
+    if(!session) return;
+    setTimeout(()=>ensureIsolation({silent:true}).catch(()=>{}),0);
+  });
 
-  function normalizeResultBytes(value){
-    if(value instanceof ArrayBuffer) return new Uint8Array(value);
-    if(ArrayBuffer.isView(value)) return new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
-    if(value?.buffer instanceof ArrayBuffer){
-      const offset=Number(value.byteOffset)||0;
-      const length=Number(value.byteLength)||value.buffer.byteLength;
-      return new Uint8Array(value.buffer,offset,length);
+  function copyToUint8Array(value){
+    let view=null;
+    if(value instanceof Uint8Array){
+      view=value;
+    }else if(ArrayBuffer.isView(value)){
+      view=new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
+    }else if(value instanceof ArrayBuffer){
+      view=new Uint8Array(value);
+    }else if(typeof SharedArrayBuffer!=='undefined'&&value instanceof SharedArrayBuffer){
+      view=new Uint8Array(value);
+    }else if(value?.buffer&&(value.buffer instanceof ArrayBuffer||
+      (typeof SharedArrayBuffer!=='undefined'&&value.buffer instanceof SharedArrayBuffer))){
+      view=new Uint8Array(value.buffer,Number(value.byteOffset)||0,Number(value.byteLength)||value.buffer.byteLength);
     }
-    return null;
+    if(!view?.byteLength) return null;
+    const copy=new Uint8Array(view.byteLength);
+    copy.set(view);
+    return copy;
   }
 
-  function onConverterMessage(event){
-    if(event.origin!==CONVERTER_ORIGIN) return;
-    if(!converterFrame||event.source!==converterFrame.contentWindow) return;
-    const data=event.data||{};
-
-    if(data.type==='ready'||data.type==='converterReady'){
-      console.info('[LibreOffice] Converter iframe gereed.');
-      if(readyTimer){clearTimeout(readyTimer);readyTimer=null;}
-      resolveConverterReady?.(converterFrame);
-      resolveConverterReady=null;
-      rejectConverterReady=null;
-      return;
+  async function getLibreOfficeConverter(msg){
+    if(!hasIsolation()){
+      throw new Error('LibreOffice-browserisolatie is niet actief. Herlaad de pagina en probeer opnieuw.');
     }
+    progressMessage=msg||null;
+    if(converterPromise) return converterPromise;
 
-    const requestId=data.requestId;
-    if(!requestId||!pendingRequests.has(requestId)) return;
-    const pending=pendingRequests.get(requestId);
+    setMessage(msg,'LibreOffice-converter laden… De eerste keer wordt ongeveer 240 MB gedownload.','busy');
+    console.info('[LibreOffice] Module laden.');
 
-    if(data.type==='result'){
-      clearTimeout(pending.timer);
-      pendingRequests.delete(requestId);
-      const bytes=normalizeResultBytes(data.data);
-      if(!bytes?.length){
-        pending.reject(new Error('LibreOffice leverde een leeg conversieresultaat op.'));
-        return;
+    converterPromise=import(LO_MODULE).then(async mod=>{
+      const WorkerBrowserConverter=mod.WorkerBrowserConverter;
+      if(typeof WorkerBrowserConverter!=='function'){
+        throw new Error('LibreOffice-browsermodule is niet beschikbaar.');
       }
-      console.info(`[LibreOffice] Conversieresultaat ontvangen: ${bytes.length} bytes.`);
-      pending.resolve(bytes);
-      return;
-    }
-
-    if(data.type==='error'){
-      clearTimeout(pending.timer);
-      pendingRequests.delete(requestId);
-      pending.reject(new Error(String(data.error||'Onbekende LibreOffice-fout.')));
-    }
-  }
-
-  window.addEventListener('message',onConverterMessage);
-
-  function ensureConverter(msg){
-    if(converterReadyPromise) return converterReadyPromise;
-
-    setMessage(msg,'LibreOffice-converter laden… De eerste keer kan dit wat langer duren.','busy');
-    console.info('[LibreOffice] Converter iframe initialiseren.');
-
-    converterReadyPromise=new Promise((resolve,reject)=>{
-      resolveConverterReady=resolve;
-      rejectConverterReady=reject;
-      readyTimer=setTimeout(()=>{
-        readyTimer=null;
-        rejectConverterReady?.(new Error('LibreOffice-converter startte niet binnen 4 minuten.'));
-        rejectConverterReady=null;
-        resolveConverterReady=null;
-        converterReadyPromise=null;
-      },240000);
-
-      const iframe=document.createElement('iframe');
-      iframe.src=CONVERTER_URL;
-      iframe.title='LibreOffice documentconverter';
-      iframe.setAttribute('aria-hidden','true');
-      iframe.tabIndex=-1;
-      iframe.style.cssText='position:fixed!important;width:1px!important;height:1px!important;left:-10000px!important;top:-10000px!important;opacity:0!important;pointer-events:none!important;border:0!important;';
-      iframe.addEventListener('error',()=>{
-        if(readyTimer){clearTimeout(readyTimer);readyTimer=null;}
-        converterReadyPromise=null;
-        reject(new Error('LibreOffice-converter kon niet worden geladen.'));
-      },{once:true});
-      converterFrame=iframe;
-      document.body.appendChild(iframe);
+      const converter=new WorkerBrowserConverter({
+        sofficeJs:new URL('libreoffice-soffice-proxy.js',document.baseURI).href,
+        sofficeWasm:`${LO_CDN}wasm/soffice.wasm`,
+        sofficeData:`${LO_CDN}wasm/soffice.data`,
+        sofficeWorkerJs:new URL('libreoffice-soffice-worker-proxy.js',document.baseURI).href,
+        browserWorkerJs:new URL('libreoffice-worker-proxy.js',document.baseURI).href,
+        verbose:false,
+        onProgress:info=>{
+          const percent=Number(info?.percent);
+          const pct=Number.isFinite(percent)&&percent>=0?` ${Math.round(percent)}%`:'';
+          const detail=String(info?.message||'').trim();
+          setMessage(progressMessage,`LibreOffice-converter laden…${pct}${detail?` — ${detail}`:''}`,'busy');
+        }
+      });
+      console.info('[LibreOffice] Initialisatie starten.');
+      await withTimeout(
+        converter.initialize(),
+        180000,
+        'LibreOffice initialiseerde niet binnen 3 minuten.'
+      );
+      console.info('[LibreOffice] Initialisatie geslaagd.');
+      return converter;
+    }).catch(err=>{
+      converterPromise=null;
+      throw err;
     });
-
-    return converterReadyPromise;
+    return converterPromise;
   }
 
   async function convertWithLibreOffice(file,msg){
     let bytes=new Uint8Array(await file.arrayBuffer());
     bytes=await repairOpenXmlPackage(bytes);
 
-    const iframe=await ensureConverter(msg);
+    const converter=await getLibreOfficeConverter(msg);
     setMessage(msg,'Document met LibreOffice omzetten naar PDF…','busy');
+    progressMessage=msg||null;
     console.info(`[LibreOffice] Conversie starten: ${file.name}, ${bytes.length} bytes.`);
 
-    const buffer=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
-    const requestId=`portfolio-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const pdfBytes=await new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{
-        pendingRequests.delete(requestId);
-        reject(new Error('LibreOffice-conversie duurde langer dan 3 minuten.'));
-      },180000);
-      pendingRequests.set(requestId,{resolve,reject,timer});
-      try{
-        iframe.contentWindow.postMessage({
-          type:'convert',
-          buffer,
-          format:'pdf',
-          requestId
-        },CONVERTER_ORIGIN,[buffer]);
-      }catch(err){
-        clearTimeout(timer);
-        pendingRequests.delete(requestId);
-        reject(err);
-      }
-    });
-
+    const result=await withTimeout(
+      converter.convert(bytes,{outputFormat:'pdf'},file.name),
+      180000,
+      'De LibreOffice-conversie duurde langer dan 3 minuten.'
+    );
+    const pdfBytes=copyToUint8Array(result?.data);
     if(!pdfBytes?.length) throw new Error('LibreOffice leverde geen PDF op.');
     console.info(`[LibreOffice] Conversie geslaagd: ${pdfBytes.length} PDF-bytes.`);
+
     return new File([pdfBytes],`${baseName(file.name)}.pdf`,{
       type:'application/pdf',
       lastModified:Date.now()
@@ -323,6 +342,22 @@
     if(!title){setMessage(msg,'Geef eerst een titel op.','error');return;}
     if(file.size>MAX_BYTES){setMessage(msg,'Het bestand is groter dan 25 MB.','error');return;}
 
+    if(!hasIsolation()){
+      button.disabled=true;
+      setMessage(msg,'LibreOffice voorbereiden… De pagina wordt één keer herladen. Kies het bestand daarna opnieuw.','busy');
+      try{
+        const ready=await ensureIsolation({silent:false});
+        if(ready){
+          setMessage(msg,'LibreOffice is gereed. Klik opnieuw op Uploaden.','success');
+          button.disabled=false;
+        }
+      }catch(err){
+        setMessage(msg,`LibreOffice kon niet worden voorbereid: ${String(err?.message||err)}`,'error');
+        button.disabled=false;
+      }
+      return;
+    }
+
     button.disabled=true;
     try{
       const {data:sessionData}=await client.auth.getSession();
@@ -342,6 +377,8 @@
       const raw=String(err?.message||'Onbekende fout.');
       setMessage(msg,`LibreOffice-conversie mislukt: ${raw}`,'error');
       button.disabled=false;
+    }finally{
+      progressMessage=null;
     }
   }
 
