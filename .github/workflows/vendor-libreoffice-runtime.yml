@@ -1,0 +1,49 @@
+name: Vendor LibreOffice browser runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vendor-libreoffice-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download same-origin LibreOffice worker scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='2.7.2'
+          BASE="https://cdn.jsdelivr.net/npm/@matbee/libreoffice-converter@${VERSION}"
+          curl --fail --location --retry 3 --silent --show-error "$BASE/dist/browser.worker.global.js" -o libreoffice-worker-proxy.js
+          curl --fail --location --retry 3 --silent --show-error "$BASE/wasm/soffice.js" -o libreoffice-soffice-proxy.js
+          curl --fail --location --retry 3 --silent --show-error "$BASE/wasm/soffice.worker.js" -o libreoffice-soffice-worker-proxy.js
+          test -s libreoffice-worker-proxy.js
+          test -s libreoffice-soffice-proxy.js
+          test -s libreoffice-soffice-worker-proxy.js
+          echo "Vendored sizes:"
+          wc -c libreoffice-worker-proxy.js libreoffice-soffice-proxy.js libreoffice-soffice-worker-proxy.js
+
+      - name: Commit vendored runtime if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add libreoffice-worker-proxy.js libreoffice-soffice-proxy.js libreoffice-soffice-worker-proxy.js
+          if git diff --cached --quiet; then
+            echo 'LibreOffice runtime already up to date.'
+            exit 0
+          fi
+          git commit -m 'Vendor same-origin LibreOffice worker scripts'
+          git push origin HEAD:main
