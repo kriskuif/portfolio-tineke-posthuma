@@ -5,26 +5,118 @@
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
 
-  try{
-    if(typeof groups!=='undefined' && groups[4]){
-      groups[4].topics=[
-        {title:'Evaluatie en bijstelling',fields:[
-          ['s8_evaluatie','Evaluatie','Wat ging goed en wat kon beter?'],
-          ['s8_bijstelling','Bijstelling','Wat verander je in een volgende training of periode?']
-        ]},
-        {title:'Aansturen van assisterend kader',fields:[
-          ['s10_kader','Aansturing','Hoe stuur je assistenten aan, verdeel je taken en bewaak je afspraken?']
-        ]},
-        {title:'Feedback praktijkbegeleider',fields:[
-          ['s9_feedback','Feedback','Upload hier de feedback van de praktijkbegeleider.']
-        ]},
-        {title:'Lesvoorbereidingen',fields:[
-          ['s17_lesvoorbereidingen','Lesvoorbereidingen','Upload hier de lesvoorbereidingen.']
-        ]}
-      ];
-      if(typeof renderChapters==='function') renderChapters();
+  function applyPortfolioStructure(){
+    try{
+      if(typeof groups==='undefined') return;
+
+      if(groups[0]){
+        groups[0].sub='Wie ben ik als wandelcoach en wat wil ik ontwikkelen?';
+        groups[0].topics=[
+          {title:'Mijn profiel als wandelcoach',fields:[
+            ['s1_intro','Korte introductie','Wie ben je, welke ervaring heb je met wandelen en training geven, en in welke context geef je training?'],
+            ['s1_motivatie','Motivatie','Waarom volg je Wandeltrainer 3? Wat wil je als trainer bereiken?'],
+            ['s1_visie','Mijn visie','Wat vind jij belangrijk in een goede wandeltraining?'],
+            ['s2_start','Persoonlijke leerdoelen · Startpunt','Welke vaardigheden beheers je al en waar wil je beter in worden?'],
+            ['s2_leerdoelen','Persoonlijke leerdoelen','Formuleer 3–5 concrete leerdoelen.'],
+            ['s2_succes','Persoonlijke leerdoelen · Succescriteria','Hoe weet je aan het einde dat je jouw leerdoelen hebt bereikt?']
+          ]}
+        ];
+      }
+
+      if(groups[1]){
+        groups[1].title='Doelgroep';
+        groups[1].sub='Voor wie geef ik training en wat is de beginsituatie?';
+        groups[1].topics=[
+          {title:'Beginsituatie en doelgroep',fields:[
+            ['s3_groep','Groepsprofiel','Beschrijf leeftijd, omvang, wandelervaring, niveau en motivatie.'],
+            ['s3_begin','Beginsituatie','Wat kunnen de deelnemers nu? Waar liggen kansen en aandachtspunten?'],
+            ['s3_behoeften','Behoeften','Wat willen de deelnemers bereiken en wat hebben zij van jou nodig?']
+          ]}
+        ];
+      }
+
+      if(groups[2]){
+        groups[2].sub='Mijn lesdagen bijhouden en concrete trainingsvoorbereiding.';
+        groups[2].topics=[
+          {title:'Mijn logboek',fields:[['s5_planning','Mijn logboek','Leg hier per lesdag vast wat je hebt gedaan, wat opviel en wat je wilt meenemen naar een volgende les.']]},
+          {title:'Trainingsvoorbereiding',fields:[['s6_voorbereiding','Voorbereiding','Doel, warming-up, kern, afsluiting, materialen, organisatie en aandachtspunten.']]}
+        ];
+      }
+
+      if(groups[4]){
+        groups[4].topics=[
+          {title:'Verslaglegging lesdagen',fields:[
+            ['s8_evaluatie','Evaluatie','Wat ging goed en wat kon beter?'],
+            ['s8_bijstelling','Bijstelling','Wat verander je in een volgende training of periode?']
+          ]},
+          {title:'Aansturen van assisterend kader',fields:[
+            ['s10_kader','Aansturing','Hoe stuur je assistenten aan, verdeel je taken en bewaak je afspraken?']
+          ]},
+          {title:'Feedback praktijkbegeleider',fields:[
+            ['s9_feedback','Feedback','Upload hier de feedback van de praktijkbegeleider.']
+          ]},
+          {title:'Lesvoorbereidingen',fields:[
+            ['s17_lesvoorbereidingen','Lesvoorbereidingen','Upload hier de lesvoorbereidingen.']
+          ]}
+        ];
+      }
+    }catch(err){console.error('Portfolio-indeling aanpassen mislukt:',err)}
+  }
+
+  function syncStaticLabels(){
+    const setText=(selector,text)=>{
+      const el=document.querySelector(selector);
+      if(el) el.textContent=text;
+    };
+
+    setText('.nav a[href="#hoofdstuk-2"] span:last-child','Doelgroep');
+
+    setText('#hoofdstuk-1 .chapter-heading .subtitle','Wie ben ik als wandelcoach en wat wil ik ontwikkelen?');
+    setText('#hoofdstuk-2 .chapter-heading h3','Doelgroep');
+    setText('#hoofdstuk-2 .chapter-heading .subtitle','Voor wie geef ik training en wat is de beginsituatie?');
+    setText('#hoofdstuk-3 .chapter-heading .subtitle','Mijn lesdagen bijhouden en concrete trainingsvoorbereiding.');
+
+    const overviewCards=document.querySelectorAll('#overzicht .journey-card');
+    const profileCard=overviewCards[0];
+    if(profileCard){
+      const p=profileCard.querySelector('p');
+      if(p) p.textContent='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?';
+      const tags=profileCard.querySelectorAll('.mini-tags span');
+      if(tags[0]) tags[0].textContent='Profiel als wandelcoach';
+      if(tags[1]) tags[1].textContent='Persoonlijke leerdoelen';
     }
-  }catch(err){console.error('Hoofdstuk 5 indelen mislukt:',err)}
+
+    const doelgroepCard=overviewCards[1];
+    if(doelgroepCard){
+      const title=doelgroepCard.querySelector('h4');
+      if(title) title.textContent='Doelgroep';
+      const p=doelgroepCard.querySelector('p');
+      if(p) p.textContent='Wie zijn mijn deelnemers en wat is hun beginsituatie?';
+      const tags=doelgroepCard.querySelectorAll('.mini-tags span');
+      if(tags[0]) tags[0].textContent='Doelgroep';
+      if(tags[1]) tags[1].remove();
+    }
+
+    const planningCard=overviewCards[2];
+    if(planningCard){
+      const p=planningCard.querySelector('p');
+      if(p) p.textContent='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?';
+      const tags=planningCard.querySelectorAll('.mini-tags span');
+      if(tags[0]) tags[0].textContent='Mijn logboek';
+    }
+
+    const evaluatieCard=overviewCards[4];
+    if(evaluatieCard){
+      const p=evaluatieCard.querySelector('p');
+      if(p) p.textContent='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?';
+      const tags=evaluatieCard.querySelectorAll('.mini-tags span');
+      if(tags[0]) tags[0].textContent='Verslaglegging lesdagen';
+    }
+  }
+
+  applyPortfolioStructure();
+  if(typeof renderChapters==='function') renderChapters();
+  syncStaticLabels();
 
   const sections={
     feedback:{cardKey:'4-2',label:'Feedback',singular:'Feedback',empty:'Nog geen feedbackdocumenten toegevoegd.'},
