@@ -392,6 +392,35 @@
     };
   }
 
+  async function detectDocxLayoutProfile(file){
+    const JSZip=await getJSZip();
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    const zip=await JSZip.loadAsync(bytes);
+    let metadata='';
+
+    for(const name of ['docProps/app.xml','docProps/core.xml']){
+      const entry=zip.file(name);
+      if(entry) metadata+=`\n${await entry.async('string')}`;
+    }
+
+    const normalized=metadata.toLowerCase();
+    if(/libreoffice|openoffice/.test(normalized)){
+      console.info('DOCX-conversie: LibreOffice herkend; LibreOffice-layoutprofiel wordt gebruikt.');
+      return 'libreoffice';
+    }
+    if(/google|google docs|docs\.google/.test(normalized)){
+      console.info('DOCX-conversie: Google Docs herkend; Word-compatibel layoutprofiel wordt gebruikt.');
+      return 'word';
+    }
+    if(/microsoft|office word|microsoft word/.test(normalized)){
+      console.info('DOCX-conversie: Microsoft Word herkend; Word-layoutprofiel wordt gebruikt.');
+      return 'word';
+    }
+
+    console.info('DOCX-conversie: bronprogramma niet herkend; Word-compatibel layoutprofiel wordt gebruikt.');
+    return 'word';
+  }
+
   async function prepareDocxForPdf(file){
     const JSZip=await getJSZip();
     const bytes=new Uint8Array(await file.arrayBuffer());
@@ -438,16 +467,18 @@
   }
 
   async function convertDocxToPdf(file){
+    const layoutProfile=await detectDocxLayoutProfile(file);
     const bytes=await prepareDocxForPdf(file);
     const Ream=await getReam();
     const doc=Ream.parse(bytes);
+    const options={layoutProfile};
     if(typeof doc.convertWithReport==='function'){
-      const result=await doc.convertWithReport('pdf');
+      const result=await doc.convertWithReport('pdf',options);
       if(result?.losses?.length) console.info('DOCX→PDF conversiemeldingen:',result.losses);
       if(!result?.bytes?.length) throw new Error('De converter leverde geen PDF op.');
       return new File([result.bytes],`${baseName(file.name)}.pdf`,{type:'application/pdf',lastModified:Date.now()});
     }
-    const pdf=await doc.convert('pdf');
+    const pdf=await doc.convert('pdf',options);
     if(!pdf?.length) throw new Error('De converter leverde geen PDF op.');
     return new File([pdf],`${baseName(file.name)}.pdf`,{type:'application/pdf',lastModified:Date.now()});
   }
