@@ -18,6 +18,26 @@
     window.__portfolioSupabaseSingletonPatched = true;
   }
 
+  // Auth callbacks must return immediately. Some modules perform database
+  // requests after an auth event; deferring those callbacks avoids waiting on
+  // the auth lock while signInWithPassword() is still finishing.
+  if (!window.__portfolioSupabaseAuthCallbacksDeferred) {
+    const originalOnAuthStateChange = client.auth.onAuthStateChange.bind(client.auth);
+    client.auth.onAuthStateChange = (callback) => originalOnAuthStateChange((event, session) => {
+      setTimeout(() => {
+        try {
+          const result = callback(event, session);
+          if (result && typeof result.catch === 'function') {
+            result.catch(err => console.error('Auth callback mislukt:', err));
+          }
+        } catch (err) {
+          console.error('Auth callback mislukt:', err);
+        }
+      }, 0);
+    });
+    window.__portfolioSupabaseAuthCallbacksDeferred = true;
+  }
+
   const style = document.createElement('style');
   style.textContent = `
     .password-recovery-overlay{position:fixed;inset:0;z-index:3400;background:rgba(20,38,31,.40);display:grid;place-items:center;padding:20px}
