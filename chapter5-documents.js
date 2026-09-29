@@ -1,8 +1,40 @@
 (() => {
-  const SUPABASE_URL='https://yvxiuslhypwbjkpmtfwy.supabase.co';
-  const SUPABASE_KEY='sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
-  const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
-  if(!client) return;
+  'use strict';
+
+  const repeatableFields={
+    s9_feedback:{title:'Feedback praktijkbegeleider',empty:'Nog geen feedback toegevoegd.'},
+    s17_lesvoorbereidingen:{title:'Lesvoorbereidingen',empty:'Nog geen lesvoorbereidingen toegevoegd.'}
+  };
+  let entryCounter=0;
+
+  const escHtml=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function parseEntries(raw){
+    const value=String(raw||'').trim();
+    if(!value) return [];
+    try{
+      const parsed=JSON.parse(value);
+      const list=Array.isArray(parsed)?parsed:Array.isArray(parsed?.entries)?parsed.entries:[];
+      return list
+        .map(item=>({title:String(item?.title||'').trim(),body:String(item?.body||'').trim()}))
+        .filter(item=>item.title||item.body);
+    }catch(_err){
+      return [{title:'',body:value}];
+    }
+  }
+
+  function serializeEntries(list){
+    const clean=list
+      .map(item=>({title:String(item?.title||'').trim(),body:String(item?.body||'').trim()}))
+      .filter(item=>item.title||item.body);
+    return clean.length?JSON.stringify({version:1,entries:clean}):'';
+  }
+
+  function renderRich(value){
+    const rich=window.portfolioRichText;
+    if(rich?.isRich?.(value)) return rich.sanitize(value);
+    return escHtml(value).replace(/\n/g,'<br>');
+  }
 
   function applyPortfolioStructure(){
     try{
@@ -80,297 +112,229 @@
     const profileCard=overviewCards[0];
     if(profileCard){
       const p=profileCard.querySelector('p');
-      if(p && p.textContent!=='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?') p.textContent='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?';
+      if(p) p.textContent='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?';
       const tags=profileCard.querySelectorAll('.mini-tags span');
-      if(tags[0] && tags[0].textContent!=='Profiel als wandelcoach') tags[0].textContent='Profiel als wandelcoach';
-      if(tags[1] && tags[1].textContent!=='Persoonlijke leerdoelen') tags[1].textContent='Persoonlijke leerdoelen';
+      if(tags[0]) tags[0].textContent='Profiel als wandelcoach';
+      if(tags[1]) tags[1].textContent='Persoonlijke leerdoelen';
     }
 
     const doelgroepCard=overviewCards[1];
     if(doelgroepCard){
-      const title=doelgroepCard.querySelector('h4');
-      if(title && title.textContent!=='Doelgroep') title.textContent='Doelgroep';
+      doelgroepCard.querySelector('h4')?.replaceChildren(document.createTextNode('Doelgroep'));
       const p=doelgroepCard.querySelector('p');
-      if(p && p.textContent!=='Wie zijn mijn deelnemers en wat is hun beginsituatie?') p.textContent='Wie zijn mijn deelnemers en wat is hun beginsituatie?';
+      if(p) p.textContent='Wie zijn mijn deelnemers en wat is hun beginsituatie?';
       const tags=doelgroepCard.querySelectorAll('.mini-tags span');
-      if(tags[0] && tags[0].textContent!=='Doelgroep') tags[0].textContent='Doelgroep';
+      if(tags[0]) tags[0].textContent='Doelgroep';
       if(tags[1]) tags[1].remove();
     }
 
     const planningCard=overviewCards[2];
     if(planningCard){
       const p=planningCard.querySelector('p');
-      if(p && p.textContent!=='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?') p.textContent='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?';
+      if(p) p.textContent='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?';
       const tags=planningCard.querySelectorAll('.mini-tags span');
-      if(tags[0] && tags[0].textContent!=='Mijn logboek') tags[0].textContent='Mijn logboek';
+      if(tags[0]) tags[0].textContent='Mijn logboek';
     }
 
     const evaluatieCard=overviewCards[4];
     if(evaluatieCard){
       const p=evaluatieCard.querySelector('p');
-      if(p && p.textContent!=='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?') p.textContent='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?';
+      if(p) p.textContent='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?';
       const tags=evaluatieCard.querySelectorAll('.mini-tags span');
-      if(tags[0] && tags[0].textContent!=='Verslaglegging lesdagen') tags[0].textContent='Verslaglegging lesdagen';
+      if(tags[0]) tags[0].textContent='Verslaglegging lesdagen';
     }
   }
 
-  applyPortfolioStructure();
-  if(typeof renderChapters==='function') renderChapters();
-  syncStaticLabels();
-
-  const sections={
-    feedback:{cardKey:'4-2',fieldId:'s9_feedback',title:'Feedback praktijkbegeleider',empty:'Nog geen feedback toegevoegd.'},
-    lessonprep:{cardKey:'4-3',fieldId:'s17_lesvoorbereidingen',title:'Lesvoorbereidingen',empty:'Nog geen lesvoorbereidingen toegevoegd.'}
-  };
-  const entries={feedback:[],lessonprep:[]};
-  const fieldToCategory=new Map(Object.entries(sections).map(([key,value])=>[value.fieldId,key]));
-
   const style=document.createElement('style');
   style.textContent=`
+    .chapter5-native-list{display:grid;gap:18px}
+    .chapter5-native-entry{display:grid;gap:12px;padding:0 0 18px;border-bottom:1px solid #e4ebe6}
+    .chapter5-native-entry:last-child{border-bottom:0;padding-bottom:2px}
+    .chapter5-native-entry .modal-field input{width:100%;border:1px solid #cbd8d0;border-radius:12px;background:#fff;color:#26352e;font:inherit;padding:11px 12px;box-sizing:border-box}
+    .chapter5-native-entry .modal-field input:focus{outline:2px solid rgba(31,94,74,.18);border-color:#6e9985}
+    .chapter5-native-remove{justify-self:end;border:0;background:transparent;color:#8d5148;padding:2px 0;font:inherit;font-size:.76rem;font-weight:800;cursor:pointer}
+    .chapter5-native-add{justify-self:start;margin-top:2px}
+    .chapter5-native-message{margin:0;min-height:18px;color:#66746e;font-size:.78rem}
+    .chapter5-native-message.error{color:#9a4138}
     .chapter5-repeat-list{display:grid;gap:14px}
     .chapter5-repeat-entry{padding:0 0 13px;border-bottom:1px solid #e5ebe7}
     .chapter5-repeat-entry:last-child{padding-bottom:0;border-bottom:0}
     .chapter5-repeat-entry h5{margin:0 0 5px;color:#244f40;font-family:Georgia,serif;font-size:.96rem;line-height:1.3}
-    .chapter5-repeat-entry p{margin:0;color:#53635b;white-space:pre-wrap;line-height:1.55}
-    .chapter5-repeat-overlay{position:fixed;inset:0;z-index:4200;background:rgba(18,34,28,.56);display:grid;place-items:center;padding:22px}
-    .chapter5-repeat-dialog{width:min(700px,calc(100vw - 30px));max-height:min(88vh,850px);display:flex;flex-direction:column;background:#fff;border:1px solid #dce5df;border-radius:20px;box-shadow:0 28px 90px rgba(13,35,27,.34);overflow:hidden}
-    .chapter5-repeat-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;background:linear-gradient(135deg,#1d5745,#286b55);color:#fff}
-    .chapter5-repeat-head strong{font-family:Georgia,serif;font-size:1.08rem}
-    .chapter5-repeat-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:1.25rem;cursor:pointer}
-    .chapter5-repeat-body{padding:17px;overflow:auto;display:grid;gap:14px}
-    .chapter5-repeat-editor-list{display:grid;gap:14px}
-    .chapter5-repeat-editor-item{display:grid;gap:9px;padding:14px;border:1px solid #dce5df;border-radius:14px;background:#fbfcfb}
-    .chapter5-repeat-editor-item input,.chapter5-repeat-editor-item textarea{width:100%;border:1px solid #ced9d2;border-radius:10px;background:#fff;color:#263b32;font:inherit;padding:10px 11px;box-sizing:border-box}
-    .chapter5-repeat-editor-item textarea{min-height:135px;resize:vertical;line-height:1.5}
-    .chapter5-repeat-editor-item input:focus,.chapter5-repeat-editor-item textarea:focus{outline:2px solid rgba(47,122,97,.18);border-color:#78a28f}
-    .chapter5-repeat-remove{justify-self:end;border:0;background:transparent;color:#8a5048;font:inherit;font-size:.76rem;font-weight:800;cursor:pointer;padding:2px 0}
-    .chapter5-repeat-add{justify-self:start;border:1px solid #cddfd4;border-radius:10px;background:#eef5f0;color:#1f5e4a;padding:9px 12px;font:inherit;font-size:.8rem;font-weight:850;cursor:pointer}
-    .chapter5-repeat-message{min-height:18px;margin:0;color:#66746e;font-size:.78rem}
-    .chapter5-repeat-message.error{color:#9a4138}
-    .chapter5-repeat-actions{position:sticky;bottom:-17px;display:flex;justify-content:flex-end;gap:8px;margin:2px -17px -17px;padding:13px 17px;background:linear-gradient(to bottom,rgba(255,255,255,.92),#fff 30%);border-top:1px solid #edf1ee}
-    .chapter5-repeat-actions button{border:0;border-radius:11px;background:#1f5e4a;color:#fff;padding:9px 13px;font:inherit;font-size:.8rem;font-weight:850;cursor:pointer}
-    .chapter5-repeat-actions button.secondary{background:#eef3ef;color:#1f5e4a;border:1px solid #dce7df}
-    .chapter5-repeat-actions button:disabled{opacity:.5;cursor:not-allowed}
-    @media(max-width:700px){.chapter5-repeat-overlay{padding:10px}.chapter5-repeat-dialog{width:100%;max-height:92vh;border-radius:16px}}
+    .chapter5-rich-body{color:#53635b;line-height:1.55;overflow-wrap:anywhere}
+    .chapter5-rich-body p{margin:.25em 0}
+    .chapter5-rich-body ul,.chapter5-rich-body ol{margin:.35em 0 .35em 1.4em;padding-left:.7em}
+    .chapter5-rich-body a[data-portfolio-file-id],.chapter5-rich-body a[data-portfolio-file-ids]{color:#1f5e4a;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;font-weight:750;cursor:pointer}
   `;
   document.head.appendChild(style);
 
-  const esc=(s='')=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-  const cleanEntry=value=>({title:String(value?.title||'').trim(),body:String(value?.body||'').trim()});
-
-  function parseEntries(raw){
-    const value=String(raw||'').trim();
-    if(!value) return [];
-    try{
-      const parsed=JSON.parse(value);
-      const list=Array.isArray(parsed)?parsed:Array.isArray(parsed?.entries)?parsed.entries:[];
-      return list.map(cleanEntry).filter(item=>item.title||item.body);
-    }catch(_err){
-      return [{title:'',body:value}];
-    }
+  function repeatableFieldForTopic(topic){
+    if(!topic?.fields?.length) return null;
+    const id=topic.fields[0]?.[0];
+    return repeatableFields[id]?id:null;
   }
 
-  function serializeEntries(list){
-    const clean=list.map(cleanEntry).filter(item=>item.title||item.body);
-    return clean.length?JSON.stringify({version:1,entries:clean}):'';
-  }
-
-  function hydrateFromState(){
-    if(typeof state==='undefined' || !state?.values) return;
-    Object.entries(sections).forEach(([category,cfg])=>{
-      entries[category]=parseEntries(state.values[cfg.fieldId]);
+  function renderRepeatableCards(){
+    if(typeof groups==='undefined' || typeof state==='undefined') return;
+    groups.forEach((group,groupIndex)=>{
+      group.topics.forEach((topic,topicIndex)=>{
+        const fieldId=repeatableFieldForTopic(topic);
+        if(!fieldId) return;
+        const card=document.querySelector(`[data-topic-card="${groupIndex}-${topicIndex}"]`);
+        const content=card?.querySelector('.topic-content');
+        if(!content) return;
+        const list=parseEntries(state.values[fieldId]);
+        content.innerHTML=list.length
+          ? `<div class="chapter5-repeat-list">${list.map(item=>`<article class="chapter5-repeat-entry">${item.title?`<h5>${escHtml(item.title)}</h5>`:''}${item.body?`<div class="chapter5-rich-body">${renderRich(item.body)}</div>`:''}</article>`).join('')}</div>`
+          : `<p class="topic-empty">${escHtml(repeatableFields[fieldId].empty)}</p>`;
+      });
     });
   }
 
-  function updateChapterProgress(){
-    if(typeof groups==='undefined' || !groups[4]) return;
-    let count=0;
-    groups[4].topics.forEach(topic=>{
-      const special=topic.fields.map(([id])=>fieldToCategory.get(id)).find(Boolean);
-      if(special){
-        if(entries[special].some(item=>item.title||item.body)) count+=1;
-      }else if(topic.fields.some(([id])=>String(typeof state!=='undefined'?state?.values?.[id]||'':'').trim())){
-        count+=1;
-      }
-    });
-    const progress=document.getElementById('progress-5');
-    const text=`${count} van ${groups[4].topics.length} onderdelen ingevuld`;
-    if(progress && progress.textContent!==text) progress.textContent=text;
+  function collectEntries(list){
+    return [...list.querySelectorAll('.chapter5-native-entry')].map(entry=>({
+      title:entry.querySelector('[data-repeat-title]')?.value?.trim()||'',
+      body:entry.querySelector('[data-repeat-body]')?.value?.trim()||''
+    }));
   }
 
-  function renderCategory(category){
-    const cfg=sections[category];
-    const card=document.querySelector(`[data-topic-card="${cfg.cardKey}"]`);
-    if(!card) return;
-    const list=entries[category]||[];
-    const filled=list.some(item=>item.title||item.body);
-    const signature=JSON.stringify(list);
-    const content=card.querySelector('.topic-content');
-
-    if(content && content.dataset.repeatableSignature!==signature){
-      content.dataset.repeatableSignature=signature;
-      content.innerHTML=filled
-        ? `<div class="chapter5-repeat-list">${list.map(item=>`<article class="chapter5-repeat-entry">${item.title?`<h5>${esc(item.title)}</h5>`:''}${item.body?`<p>${esc(item.body)}</p>`:''}</article>`).join('')}</div>`
-        : `<p class="topic-empty">${esc(cfg.empty)}</p>`;
-    }
-
-    card.classList.toggle('filled',filled);
-    const badge=card.querySelector('.topic-state');
-    const badgeText=filled?'Ingevuld':'Nog leeg';
-    if(badge && badge.textContent!==badgeText) badge.textContent=badgeText;
-
-    const current=card.querySelector('.topic-edit-btn');
-    const buttonText=filled?'Aanpassen':'Invullen';
-    if(current && current.dataset.repeatableEditor!==category){
-      const button=current.cloneNode(true);
-      button.removeAttribute('data-edit-topic');
-      button.removeAttribute('data-file-upload-button');
-      button.dataset.repeatableEditor=category;
-      button.textContent=buttonText;
-      current.replaceWith(button);
-      button.addEventListener('click',()=>openEditor(category));
-    }else if(current && current.textContent!==buttonText){
-      current.textContent=buttonText;
-    }
+  function makeEntry(fieldId,item={title:'',body:''}){
+    const section=document.createElement('section');
+    section.className='chapter5-native-entry';
+    const key=`chapter5-native-${fieldId}-${Date.now()}-${++entryCounter}`;
+    section.innerHTML=`
+      <div class="modal-field">
+        <label>Titel<small>Geef deze invoer een korte, duidelijke titel.</small></label>
+        <input type="text" maxlength="200" data-repeat-title placeholder="Typ hier de titel">
+      </div>
+      <div class="modal-field">
+        <label>Hoofdtekst<small>Werk de invoer hier uit. Opmaak en bewijsstukken koppelen werken hetzelfde als in de andere onderdelen.</small></label>
+        <textarea data-modal-field="${key}" data-repeat-body></textarea>
+      </div>
+      <button type="button" class="chapter5-native-remove" data-repeat-remove>Verwijderen</button>`;
+    section.querySelector('[data-repeat-title]').value=item.title||'';
+    section.querySelector('[data-repeat-body]').value=item.body||'';
+    return section;
   }
 
-  function renderSections(){
-    renderCategory('feedback');
-    renderCategory('lessonprep');
-    updateChapterProgress();
-  }
+  function enhanceNativeWindow(win){
+    if(!win?.el || win.el.dataset.nativeRepeatableReady==='1') return;
+    const fieldId=repeatableFieldForTopic(win.topic);
+    if(!fieldId) return;
 
-  function makeEditorItem(item={title:'',body:''}){
-    const wrapper=document.createElement('section');
-    wrapper.className='chapter5-repeat-editor-item';
-    wrapper.innerHTML=`
-      <input type="text" maxlength="200" data-repeat-title placeholder="Titel" value="${esc(item.title||'')}">
-      <textarea data-repeat-body placeholder="Hoofdtekst">${esc(item.body||'')}</textarea>
-      <button type="button" class="chapter5-repeat-remove" data-repeat-remove>Verwijderen</button>`;
-    wrapper.querySelector('[data-repeat-remove]')?.addEventListener('click',()=>{
-      const list=wrapper.closest('[data-repeat-editor-list]');
-      if(!list) return;
+    const canonical=win.el.querySelector(`[data-modal-field="${fieldId}"]`);
+    const fields=win.el.querySelector('.modal-fields');
+    if(!canonical||!fields) return;
+
+    win.el.dataset.nativeRepeatableReady='1';
+    const initial=parseEntries(canonical.value);
+    canonical.dataset.richEnhanced='1';
+    canonical.dataset.repeatCanonical='1';
+    canonical.style.display='none';
+    canonical.setAttribute('aria-hidden','true');
+
+    const list=document.createElement('div');
+    list.className='chapter5-native-list';
+    list.dataset.nativeRepeatList='1';
+    (initial.length?initial:[{title:'',body:''}]).forEach(item=>list.appendChild(makeEntry(fieldId,item)));
+
+    const add=document.createElement('button');
+    add.type='button';
+    add.className='text-button chapter5-native-add';
+    add.dataset.nativeRepeatAdd='1';
+    add.textContent='Nieuwe invoer +';
+
+    const message=document.createElement('p');
+    message.className='chapter5-native-message';
+    message.dataset.nativeRepeatMessage='1';
+
+    fields.replaceChildren(canonical,list,add,message);
+
+    const syncCanonical=()=>{
+      canonical.value=serializeEntries(collectEntries(list));
+    };
+    const markDirty=()=>{
+      syncCanonical();
+      if(typeof setWindowDirty==='function') setWindowDirty(win,true);
+    };
+
+    list.addEventListener('input',markDirty);
+
+    list.addEventListener('click',event=>{
+      const remove=event.target.closest?.('[data-repeat-remove]');
+      if(!remove) return;
+      const entry=remove.closest('.chapter5-native-entry');
+      if(!entry) return;
       if(list.children.length===1){
-        wrapper.querySelector('[data-repeat-title]').value='';
-        wrapper.querySelector('[data-repeat-body]').value='';
-        wrapper.querySelector('[data-repeat-title]').focus();
+        entry.querySelector('[data-repeat-title]').value='';
+        const textarea=entry.querySelector('[data-repeat-body]');
+        const editor=entry.querySelector('.rich-editor');
+        if(editor){
+          editor.innerHTML='';
+          editor.dispatchEvent(new Event('input',{bubbles:true}));
+        }else if(textarea){
+          textarea.value='';
+          textarea.dispatchEvent(new Event('input',{bubbles:true}));
+        }
+        entry.querySelector('[data-repeat-title]')?.focus();
       }else{
-        wrapper.remove();
+        entry.remove();
+        markDirty();
       }
     });
-    return wrapper;
-  }
 
-  function openEditor(category){
-    if(!document.body.classList.contains('can-edit')) return;
-    const cfg=sections[category];
-    const overlay=document.createElement('div');
-    overlay.className='chapter5-repeat-overlay';
-    overlay.innerHTML=`
-      <section class="chapter5-repeat-dialog" role="dialog" aria-modal="true" aria-label="${esc(cfg.title)} aanpassen">
-        <header class="chapter5-repeat-head"><strong>${esc(cfg.title)}</strong><button class="chapter5-repeat-close" type="button" aria-label="Sluiten">×</button></header>
-        <div class="chapter5-repeat-body">
-          <div class="chapter5-repeat-editor-list" data-repeat-editor-list></div>
-          <button class="chapter5-repeat-add" type="button" data-repeat-add>Nieuwe invoer +</button>
-          <p class="chapter5-repeat-message" data-repeat-message></p>
-          <div class="chapter5-repeat-actions"><button class="secondary" type="button" data-repeat-cancel>Annuleren</button><button type="button" data-repeat-save>Opslaan</button></div>
-        </div>
-      </section>`;
-    document.body.appendChild(overlay);
-
-    const list=overlay.querySelector('[data-repeat-editor-list]');
-    (entries[category].length?entries[category]:[{title:'',body:''}]).forEach(item=>list.appendChild(makeEditorItem(item)));
-
-    const close=()=>overlay.remove();
-    overlay.querySelector('.chapter5-repeat-close')?.addEventListener('click',close);
-    overlay.querySelector('[data-repeat-cancel]')?.addEventListener('click',close);
-    overlay.addEventListener('click',event=>{if(event.target===overlay) close();});
-    overlay.querySelector('[data-repeat-add]')?.addEventListener('click',()=>{
-      const item=makeEditorItem();
-      list.appendChild(item);
-      item.querySelector('[data-repeat-title]')?.focus();
-      item.scrollIntoView({behavior:'smooth',block:'nearest'});
+    add.addEventListener('click',()=>{
+      const entry=makeEntry(fieldId);
+      list.appendChild(entry);
+      markDirty();
+      entry.querySelector('[data-repeat-title]')?.focus();
+      entry.scrollIntoView({behavior:'smooth',block:'nearest'});
     });
-    requestAnimationFrame(()=>list.querySelector('[data-repeat-title]')?.focus());
 
-    overlay.querySelector('[data-repeat-save]')?.addEventListener('click',async event=>{
-      const saveButton=event.currentTarget;
-      const message=overlay.querySelector('[data-repeat-message]');
-      const draft=[...list.querySelectorAll('.chapter5-repeat-editor-item')].map(item=>({
-        title:item.querySelector('[data-repeat-title]')?.value?.trim()||'',
-        body:item.querySelector('[data-repeat-body]')?.value?.trim()||''
-      }));
+    const saveButton=win.el.querySelector('[data-window-save]');
+    saveButton?.addEventListener('click',event=>{
+      const draft=collectEntries(list);
       if(draft.some(item=>(item.title&&!item.body)||(!item.title&&item.body))){
+        event.preventDefault();
+        event.stopImmediatePropagation();
         message.textContent='Vul bij elke invoer zowel een titel als de hoofdtekst in.';
         message.classList.add('error');
         return;
       }
-      const clean=draft.filter(item=>item.title&&item.body);
-      saveButton.disabled=true;
+      message.textContent='';
       message.classList.remove('error');
-      message.textContent='Opslaan…';
+      syncCanonical();
+    },true);
 
-      try{
-        const {data:sessionData}=await client.auth.getSession();
-        if(!sessionData?.session) throw new Error('Je bent niet meer ingelogd. Log opnieuw in.');
-        const value=serializeEntries(clean);
-        const {error}=await client.from('portfolio_content').upsert([{id:cfg.fieldId,value}],{onConflict:'id'});
-        if(error) throw error;
-
-        entries[category]=clean;
-        if(typeof state!=='undefined' && state?.values) state.values[cfg.fieldId]=value;
-        if(typeof persistState==='function') persistState(`${cfg.title} opgeslagen op website`);
-        else if(typeof setStatus==='function') setStatus(`${cfg.title} opgeslagen op website`,'saved');
-        renderSections();
-        message.textContent='Opgeslagen.';
-        setTimeout(close,300);
-      }catch(err){
-        console.error(`${cfg.title} opslaan mislukt:`,err);
-        message.textContent='Opslaan mislukt: '+String(err?.message||err);
-        message.classList.add('error');
-        saveButton.disabled=false;
-      }
-    });
+    syncCanonical();
   }
 
-  async function loadEntries(){
-    hydrateFromState();
-    renderSections();
+  applyPortfolioStructure();
+
+  if(typeof openEditor==='function' && typeof openWindows!=='undefined'){
+    const originalOpenEditor=openEditor;
+    openEditor=function(groupIndex,topicIndex){
+      originalOpenEditor(groupIndex,topicIndex);
+      const key=typeof makeWindowKey==='function'?makeWindowKey(groupIndex,topicIndex):`${groupIndex}-${topicIndex}`;
+      const win=openWindows.get(key);
+      if(win) enhanceNativeWindow(win);
+    };
+  }
+
+  if(typeof renderChapters==='function'){
+    const originalRenderChapters=renderChapters;
+    const nativeRepeatableRender=function(){
+      originalRenderChapters();
+      renderRepeatableCards();
+      syncStaticLabels();
+    };
     try{
-      const ids=Object.values(sections).map(cfg=>cfg.fieldId);
-      const {data,error}=await client.from('portfolio_content').select('id,value').in('id',ids);
-      if(error) throw error;
-      (data||[]).forEach(row=>{
-        const category=fieldToCategory.get(row.id);
-        if(!category) return;
-        entries[category]=parseEntries(row.value);
-        if(typeof state!=='undefined' && state?.values) state.values[row.id]=row.value||'';
-      });
-      renderSections();
-    }catch(err){
-      console.error('Feedback/lesvoorbereidingen laden mislukt:',err);
+      window.renderChapters=nativeRepeatableRender;
+      renderChapters=nativeRepeatableRender;
+    }catch(_err){
+      window.renderChapters=nativeRepeatableRender;
     }
+    nativeRepeatableRender();
+  }else{
+    syncStaticLabels();
   }
-
-  const topics5=document.getElementById('topics-5');
-  let observer=null;
-  if(topics5){
-    let scheduled=false;
-    const observe=()=>observer?.observe(topics5,{childList:true,subtree:true});
-    observer=new MutationObserver(()=>{
-      if(scheduled) return;
-      scheduled=true;
-      setTimeout(()=>{
-        scheduled=false;
-        observer.disconnect();
-        hydrateFromState();
-        renderSections();
-        observe();
-      },0);
-    });
-    observe();
-  }
-
-  loadEntries();
 })();
