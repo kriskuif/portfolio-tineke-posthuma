@@ -78,3 +78,12 @@
   script.dataset.libreofficeUploadOverride='1';
   document.head.appendChild(script);
 })();
+
+(() => {
+  if(document.querySelector('script[data-chapter-section-editor],script[src^="chapter-subtitle-editor.js"]')) return;
+  const script=document.createElement('script');
+  script.src='chapter-subtitle-editor.js?v=20260929-3';
+  script.async=false;
+  script.dataset.chapterSectionEditor='1';
+  document.head.appendChild(script);
+})();
