@@ -59,10 +59,10 @@
       overscroll-behavior:none!important;
     }
 
-    /* The evidence-link chooser can be opened from the repeatable chapter 5
-       editor, whose overlay uses z-index 4200. Keep the chooser above it. */
+    /* Repeatable chapter 5 editors use z-index 4600. The evidence chooser
+       must sit above every editor window so it is immediately visible. */
     .text-file-link-overlay{
-      z-index:4350!important;
+      z-index:4900!important;
     }
   `;
   document.head.appendChild(style);
