@@ -21,7 +21,8 @@
     '.file-upload-overlay',
     '.file-viewer-overlay',
     '.file-title-overlay',
-    '.text-file-link-overlay'
+    '.text-file-link-overlay',
+    '.chapter-subtitle-overlay'
   ].join(',');
 
   const root = document.documentElement;
@@ -63,4 +64,13 @@
 
   syncScrollLock();
   new MutationObserver(syncScrollLock).observe(document.body, {childList:true, subtree:true});
+
+  // Keep the subtitle editor isolated from the large base script while loading
+  // it on every portfolio page. The version suffix prevents stale browser cache.
+  if(!document.querySelector('script[data-chapter-subtitle-editor]')){
+    const script=document.createElement('script');
+    script.src='chapter-subtitle-editor.js?v=20260929-1';
+    script.dataset.chapterSubtitleEditor='1';
+    document.head.appendChild(script);
+  }
 })();
