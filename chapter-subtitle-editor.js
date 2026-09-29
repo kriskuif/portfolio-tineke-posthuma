@@ -6,6 +6,11 @@
   const client=window.supabase?.createClient?.(SUPABASE_URL,SUPABASE_KEY);
   if(!client) return;
 
+  const STATIC_SECTIONS=[
+    {selector:'#over',key:'over',name:'Over dit portfolio'},
+    {selector:'#overzicht',key:'overzicht',name:'Portfolio-overzicht'}
+  ];
+
   const style=document.createElement('style');
   style.textContent=`
     .chapter-edit-line{display:flex;align-items:center;gap:6px;min-width:0}
@@ -42,7 +47,8 @@
 
   const chapterNumber=section=>String(section?.dataset?.group||'').padStart(2,'0');
   const chapterIndex=section=>Math.max(0,Number(section?.dataset?.group||0)-1);
-  const storageId=(section,kind)=>`chapter_${kind}_${chapterNumber(section)}`;
+  const chapterStorageId=(section,kind)=>`chapter_${kind}_${chapterNumber(section)}`;
+  const staticStorageId=(key,kind)=>`section_${kind}_${key}`;
 
   function overviewCard(section){
     const n=Number(section?.dataset?.group||0);
@@ -51,11 +57,14 @@
       .find(card=>card.querySelector(`a[href="#hoofdstuk-${n}"]`))||null;
   }
 
+  function navLabelForHref(href){
+    const link=document.querySelector(`.nav a[href="${href}"]`);
+    return link?.querySelector('span:last-child')||null;
+  }
+
   function navLabel(section){
     const n=Number(section?.dataset?.group||0);
-    if(!n) return null;
-    const link=document.querySelector(`.nav a[href="#hoofdstuk-${n}"]`);
-    return link?.querySelector('span:last-child')||null;
+    return n?navLabelForHref(`#hoofdstuk-${n}`):null;
   }
 
   function applyTitle(section,value){
@@ -86,15 +95,32 @@
     if(text) text.textContent=clean;
   }
 
-  function makeEditButton(label,kind,section,target){
+  function applyStaticTitle(config,value){
+    const clean=String(value||'').trim();
+    if(!clean) return;
+    const section=document.querySelector(config.selector);
+    const title=section?.querySelector(':scope > .section-header h3');
+    if(title) title.textContent=clean;
+    const nav=navLabelForHref(config.selector);
+    if(nav) nav.textContent=clean;
+  }
+
+  function applyStaticSubtitle(config,value){
+    const clean=String(value||'').trim();
+    if(!clean) return;
+    const subtitle=document.querySelector(`${config.selector} > .section-header .subtitle`);
+    if(subtitle) subtitle.textContent=clean;
+  }
+
+  function makeEditButton(label,onClick,kind=''){
     const button=document.createElement('button');
     button.type='button';
     button.className='chapter-inline-edit';
-    button.dataset.chapterFieldEdit=kind;
+    if(kind) button.dataset.chapterFieldEdit=kind;
     button.setAttribute('aria-label',label);
     button.title=label;
     button.textContent='✎';
-    button.addEventListener('click',()=>openEditor(section,kind,target));
+    button.addEventListener('click',onClick);
     return button;
   }
 
@@ -111,7 +137,11 @@
       line.className='chapter-edit-line chapter-title-line';
       title.before(line);
       line.appendChild(title);
-      line.appendChild(makeEditButton(`Titel van hoofdstuk ${chapterNumber(section)} aanpassen`,'title',section,title));
+      line.appendChild(makeEditButton(
+        `Titel van hoofdstuk ${chapterNumber(section)} aanpassen`,
+        ()=>openChapterEditor(section,'title',title),
+        'title'
+      ));
     }
 
     if(section.dataset.subtitleEditable!=='1'){
@@ -120,7 +150,11 @@
       line.className='chapter-edit-line chapter-subtitle-line';
       subtitle.before(line);
       line.appendChild(subtitle);
-      line.appendChild(makeEditButton(`Subtekst van hoofdstuk ${chapterNumber(section)} aanpassen`,'subtitle',section,subtitle));
+      line.appendChild(makeEditButton(
+        `Subtekst van hoofdstuk ${chapterNumber(section)} aanpassen`,
+        ()=>openChapterEditor(section,'subtitle',subtitle),
+        'subtitle'
+      ));
     }
   }
 
@@ -133,7 +167,43 @@
     wrap.className='chapter-overview-edit-wrap';
     text.before(wrap);
     wrap.appendChild(text);
-    wrap.appendChild(makeEditButton(`Overzichtstekst van hoofdstuk ${chapterNumber(section)} aanpassen`,'overview',section,text));
+    wrap.appendChild(makeEditButton(
+      `Overzichtstekst van hoofdstuk ${chapterNumber(section)} aanpassen`,
+      ()=>openChapterEditor(section,'overview',text),
+      'overview'
+    ));
+  }
+
+  function decorateStaticSection(config){
+    const section=document.querySelector(config.selector);
+    const header=section?.querySelector(':scope > .section-header');
+    const title=header?.querySelector('h3');
+    const subtitle=header?.querySelector('.subtitle');
+    if(!section||!header||!title||!subtitle) return;
+
+    if(section.dataset.staticTitleEditable!=='1'){
+      section.dataset.staticTitleEditable='1';
+      const line=document.createElement('div');
+      line.className='chapter-edit-line chapter-title-line';
+      title.before(line);
+      line.appendChild(title);
+      line.appendChild(makeEditButton(
+        `Titel van ${config.name} aanpassen`,
+        ()=>openStaticEditor(config,'title',title)
+      ));
+    }
+
+    if(section.dataset.staticSubtitleEditable!=='1'){
+      section.dataset.staticSubtitleEditable='1';
+      const line=document.createElement('div');
+      line.className='chapter-edit-line chapter-subtitle-line';
+      subtitle.before(line);
+      line.appendChild(subtitle);
+      line.appendChild(makeEditButton(
+        `Subtekst van ${config.name} aanpassen`,
+        ()=>openStaticEditor(config,'subtitle',subtitle)
+      ));
+    }
   }
 
   function decorateAll(){
@@ -141,30 +211,29 @@
       decorateSection(section);
       decorateOverview(section);
     });
+    STATIC_SECTIONS.forEach(decorateStaticSection);
   }
 
   function closeExisting(){
     document.querySelector('.chapter-field-overlay')?.remove();
   }
 
-  function fieldLabel(kind){
-    if(kind==='title') return 'Hoofdstuktitel';
+  function fieldLabel(kind,isStatic=false){
+    if(kind==='title') return isStatic?'Titel':'Hoofdstuktitel';
     if(kind==='overview') return 'Tekst in Portfolio-overzicht';
-    return 'Subtekst onder de hoofdstuktitel';
+    return isStatic?'Subtekst':'Subtekst onder de hoofdstuktitel';
   }
 
-  function openEditor(section,kind,target){
+  function openFieldEditor({kind,target,storageId,contextLabel,apply,statusLabel}){
     if(!document.body.classList.contains('can-edit')) return;
     closeExisting();
 
-    const number=chapterNumber(section);
-    const currentTitle=section.querySelector('.chapter-heading h3')?.textContent?.trim()||`Hoofdstuk ${number}`;
     const overlay=document.createElement('div');
     overlay.className='chapter-field-overlay';
     overlay.innerHTML=`
-      <section class="chapter-field-dialog" role="dialog" aria-modal="true" aria-label="${fieldLabel(kind)} aanpassen">
+      <section class="chapter-field-dialog" role="dialog" aria-modal="true" aria-label="${fieldLabel(kind,true)} aanpassen">
         <header class="chapter-field-head">
-          <strong>${fieldLabel(kind)} aanpassen</strong>
+          <strong>${fieldLabel(kind,true)} aanpassen</strong>
           <button class="chapter-field-close" type="button" aria-label="Sluiten">×</button>
         </header>
         <div class="chapter-field-body">
@@ -179,7 +248,7 @@
       </section>`;
     document.body.appendChild(overlay);
 
-    overlay.querySelector('[data-chapter-field-label]').textContent=`Hoofdstuk ${number} · ${currentTitle}`;
+    overlay.querySelector('[data-chapter-field-label]').textContent=contextLabel;
     const controlHost=overlay.querySelector('[data-chapter-field-control]');
     const control=document.createElement(kind==='title'?'input':'textarea');
     if(kind==='title'){
@@ -219,21 +288,16 @@
       try{
         const {data:sessionData}=await client.auth.getSession();
         if(!sessionData?.session) throw new Error('Je bent niet meer ingelogd. Log opnieuw in.');
-        const id=storageId(section,kind);
-        const {error}=await client.from('portfolio_content').upsert([{id,value}],{onConflict:'id'});
+        const {error}=await client.from('portfolio_content').upsert([{id:storageId,value}],{onConflict:'id'});
         if(error) throw error;
 
-        if(kind==='title') applyTitle(section,value);
-        else if(kind==='overview') applyOverview(section,value);
-        else applySubtitle(section,value);
-
-        if(typeof state!=='undefined'&&state?.values) state.values[id]=value;
-        const statusLabel=kind==='title'?'Titel':kind==='overview'?'Overzichtstekst':'Subtekst';
-        if(typeof persistState==='function') persistState(`${statusLabel} hoofdstuk ${number} opgeslagen op website`);
-        else if(typeof setStatus==='function') setStatus(`${statusLabel} hoofdstuk ${number} opgeslagen op website`,'saved');
+        apply(value);
+        if(typeof state!=='undefined'&&state?.values) state.values[storageId]=value;
+        if(typeof persistState==='function') persistState(`${statusLabel} opgeslagen op website`);
+        else if(typeof setStatus==='function') setStatus(`${statusLabel} opgeslagen op website`,'saved');
         close();
       }catch(err){
-        console.error('Hoofdstuktekst opslaan mislukt:',err);
+        console.error('Portfoliotekst opslaan mislukt:',err);
         message.textContent='Opslaan mislukt: '+String(err?.message||err);
         message.classList.add('error');
         save.disabled=false;
@@ -246,24 +310,67 @@
     });
   }
 
+  function openChapterEditor(section,kind,target){
+    const number=chapterNumber(section);
+    const currentTitle=section.querySelector('.chapter-heading h3')?.textContent?.trim()||`Hoofdstuk ${number}`;
+    const statusLabel=kind==='title'?`Titel hoofdstuk ${number}`:kind==='overview'?`Overzichtstekst hoofdstuk ${number}`:`Subtekst hoofdstuk ${number}`;
+    openFieldEditor({
+      kind,
+      target,
+      storageId:chapterStorageId(section,kind),
+      contextLabel:`Hoofdstuk ${number} · ${currentTitle}`,
+      statusLabel,
+      apply:value=>{
+        if(kind==='title') applyTitle(section,value);
+        else if(kind==='overview') applyOverview(section,value);
+        else applySubtitle(section,value);
+      }
+    });
+  }
+
+  function openStaticEditor(config,kind,target){
+    openFieldEditor({
+      kind,
+      target,
+      storageId:staticStorageId(config.key,kind),
+      contextLabel:config.name,
+      statusLabel:`${kind==='title'?'Titel':'Subtekst'} ${config.name}`,
+      apply:value=>{
+        if(kind==='title') applyStaticTitle(config,value);
+        else applyStaticSubtitle(config,value);
+      }
+    });
+  }
+
   async function loadSavedFields(){
     const sections=[...document.querySelectorAll('section.portfolio-group[data-group]')];
-    const ids=sections.flatMap(section=>['title','subtitle','overview'].map(kind=>storageId(section,kind)));
+    const chapterIds=sections.flatMap(section=>['title','subtitle','overview'].map(kind=>chapterStorageId(section,kind)));
+    const staticIds=STATIC_SECTIONS.flatMap(config=>['title','subtitle'].map(kind=>staticStorageId(config.key,kind)));
+    const ids=[...chapterIds,...staticIds];
     if(!ids.length) return;
+
     try{
       const {data,error}=await client.from('portfolio_content').select('id,value').in('id',ids);
       if(error) throw error;
       const byId=new Map((data||[]).map(row=>[row.id,String(row.value||'').trim()]));
+
       sections.forEach(section=>{
-        const title=byId.get(storageId(section,'title'));
-        const subtitle=byId.get(storageId(section,'subtitle'));
-        const overview=byId.get(storageId(section,'overview'));
+        const title=byId.get(chapterStorageId(section,'title'));
+        const subtitle=byId.get(chapterStorageId(section,'subtitle'));
+        const overview=byId.get(chapterStorageId(section,'overview'));
         if(title) applyTitle(section,title);
         if(subtitle) applySubtitle(section,subtitle);
         if(overview) applyOverview(section,overview);
       });
+
+      STATIC_SECTIONS.forEach(config=>{
+        const title=byId.get(staticStorageId(config.key,'title'));
+        const subtitle=byId.get(staticStorageId(config.key,'subtitle'));
+        if(title) applyStaticTitle(config,title);
+        if(subtitle) applyStaticSubtitle(config,subtitle);
+      });
     }catch(err){
-      console.error('Bewerkbare hoofdstukteksten laden mislukt:',err);
+      console.error('Bewerkbare portfolioteksten laden mislukt:',err);
     }
   }
 
