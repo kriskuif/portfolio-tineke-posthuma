@@ -20,7 +20,8 @@
     '.password-recovery-overlay',
     '.file-upload-overlay',
     '.file-viewer-overlay',
-    '.file-title-overlay'
+    '.file-title-overlay',
+    '.text-file-link-overlay'
   ].join(',');
 
   const root = document.documentElement;
@@ -56,6 +57,12 @@
     body.site-modal-open{
       overflow:hidden!important;
       overscroll-behavior:none!important;
+    }
+
+    /* The evidence-link chooser can be opened from the repeatable chapter 5
+       editor, whose overlay uses z-index 4200. Keep the chooser above it. */
+    .text-file-link-overlay{
+      z-index:4350!important;
     }
   `;
   document.head.appendChild(style);
