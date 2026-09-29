@@ -20,6 +20,9 @@
     .settings-card:has([data-current-password]) .settings-actions{justify-content:flex-end;margin-top:14px!important}
     .settings-card:has([data-current-password]) .settings-message{text-align:right}
 
+    /* In a two-column portfolio row, let an unpaired final card use the full width. */
+    .topic-list > .topic-card:last-child:nth-child(odd){grid-column:1/-1}
+
     @media(max-width:760px){
       .settings-window{width:min(900px,calc(100vw - 20px))}
       .settings-card:has([data-current-password]){grid-column:auto}
