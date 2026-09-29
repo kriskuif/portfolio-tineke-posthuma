@@ -58,12 +58,6 @@
       overflow:hidden!important;
       overscroll-behavior:none!important;
     }
-
-    /* Repeatable chapter 5 editors use z-index 4600. The evidence chooser
-       must sit above every editor window so it is immediately visible. */
-    .text-file-link-overlay{
-      z-index:4900!important;
-    }
   `;
   document.head.appendChild(style);
 
