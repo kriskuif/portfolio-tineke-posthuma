@@ -1,4 +1,24 @@
 (() => {
+  // Portfolio structure: chapter 03 contains only the logbook card.
+  // Remove the obsolete training-preparation topic from the shared data model
+  // so it also stays gone after later re-renders or Supabase synchronisation.
+  try {
+    if (typeof groups !== 'undefined' && Array.isArray(groups[2]?.topics)) {
+      const before = groups[2].topics.length;
+      groups[2].topics = groups[2].topics.filter(topic => {
+        const title = String(topic?.title || '').trim().toLowerCase();
+        const hasPreparationField = Array.isArray(topic?.fields) &&
+          topic.fields.some(field => Array.isArray(field) && field[0] === 's6_voorbereiding');
+        return title !== 'trainingsvoorbereiding' && !hasPreparationField;
+      });
+      if (groups[2].topics.length !== before && typeof renderChapters === 'function') {
+        renderChapters();
+      }
+    }
+  } catch (err) {
+    console.error('Trainingsvoorbereiding verwijderen mislukt:', err);
+  }
+
   // Modal windows may only be closed with their explicit controls
   // (close/cancel/Escape where supported), never by clicking the backdrop.
   document.addEventListener('click', event => {
