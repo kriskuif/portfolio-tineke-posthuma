@@ -9,8 +9,7 @@
     {id:'wandelgids',name:'Bos & Blad',description:'Mosgroen, warm papier en bladstructuren.'},
     {id:'tijdschrift',name:'Herfstpad',description:'Roest, koper en goud.'},
     {id:'dagboek',name:'Routekaart',description:'Blauwgroen en topografische lijnen.'},
-    {id:'minimal',name:'Duin & Zee',description:'Warm strandzand, voetsporen en schelpen.'},
-    {id:'minimal-classic',name:'Duin & Zee — origineel',description:'De oorspronkelijke versie met zachte golven.'}
+    {id:'minimal',name:'Duin & Zee',description:'Zand, lucht en zeeblauw.'}
   ];
   const allowed = new Set(themes.map(theme => theme.id));
   const client = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_KEY);
@@ -82,7 +81,7 @@
     const info = themeInfo(id);
     const name = control.querySelector('[data-theme-name]');
     const description = control.querySelector('[data-theme-desc]');
-    if(name){ name.textContent = info.name; name.title = info.name; }
+    if(name) name.textContent = info.name;
     if(description) description.textContent = info.description;
     control.querySelectorAll('[data-theme-menu-choice]').forEach(button => {
       const active = button.dataset.themeMenuChoice === id;

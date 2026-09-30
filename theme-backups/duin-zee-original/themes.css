@@ -256,7 +256,7 @@ html[data-portfolio-theme="dagboek"] .portfolio-group:before{
 }
 
 /* 5. Duin & Zee — zand, lucht en diep zeeblauw met zachte golven */
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]){
+html[data-portfolio-theme="minimal"]{
   --forest:#245b78;
   --forest-2:#3f7895;
   --leaf:#79aeb5;
@@ -268,7 +268,7 @@ html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"
   --white:#ffffff;
   --shadow:0 18px 50px rgba(44,75,88,.11);
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) body{
+html[data-portfolio-theme="minimal"] body{
   font-family:Verdana,Geneva,sans-serif;
   background-color:#f8f5ed;
   background-image:
@@ -280,53 +280,53 @@ html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"
   background-repeat:repeat,no-repeat,no-repeat,no-repeat;
   background-position:0 20px,center top,center top,center top;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .sidebar{
+html[data-portfolio-theme="minimal"] .sidebar{
   background:linear-gradient(180deg,#17445d,#245b78 52%,#1b4b63);
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .topbar{
+html[data-portfolio-theme="minimal"] .topbar{
   background:rgba(248,245,237,.93);
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .hero{
+html[data-portfolio-theme="minimal"] .hero{
   background:
     radial-gradient(ellipse at 88% 12%,rgba(91,158,183,.18) 0 13%,transparent 13.5%),
     radial-gradient(ellipse at 78% 100%,rgba(217,191,130,.24) 0 18%,transparent 18.5%),
     linear-gradient(150deg,#f6ebd5 0%,#fffaf0 45%,#dfeef1 100%);
   border-color:#d7dfd7;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .hero h2,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .section h3,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .topic-card h4,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .quote-card strong{
+html[data-portfolio-theme="minimal"] .hero h2,
+html[data-portfolio-theme="minimal"] .section h3,
+html[data-portfolio-theme="minimal"] .topic-card h4,
+html[data-portfolio-theme="minimal"] .quote-card strong{
   font-family:Palatino,"Palatino Linotype","Book Antiqua",Georgia,serif;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .hero h2 span,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .eyebrow,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .journey-card>a{
+html[data-portfolio-theme="minimal"] .hero h2 span,
+html[data-portfolio-theme="minimal"] .eyebrow,
+html[data-portfolio-theme="minimal"] .journey-card>a{
   color:#245b78;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .section,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .card,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .journey-card,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .topic-card{
+html[data-portfolio-theme="minimal"] .section,
+html[data-portfolio-theme="minimal"] .card,
+html[data-portfolio-theme="minimal"] .journey-card,
+html[data-portfolio-theme="minimal"] .topic-card{
   background:#fffefb;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .quote-card{
+html[data-portfolio-theme="minimal"] .quote-card{
   background:linear-gradient(135deg,#e8f2f2,#f2efe5);
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .quote-card strong{
+html[data-portfolio-theme="minimal"] .quote-card strong{
   color:#31596b;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .section-num,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .section-icon,
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .journey-card .num{
+html[data-portfolio-theme="minimal"] .section-num,
+html[data-portfolio-theme="minimal"] .section-icon,
+html[data-portfolio-theme="minimal"] .journey-card .num{
   background:#dfecef;
   color:#245b78;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .mini-tags span{
+html[data-portfolio-theme="minimal"] .mini-tags span{
   background:#efe4c9;
   color:#6b603f;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .portfolio-group:before{
+html[data-portfolio-theme="minimal"] .portfolio-group:before{
   background:linear-gradient(180deg,#5a91a6,#d3c18f);
 }
 
@@ -372,13 +372,13 @@ html[data-portfolio-theme="wandelgids"] .theme-symbol-tree{
 }
 html[data-portfolio-theme="tijdschrift"] .theme-symbol-leaf{display:block;opacity:.12}
 html[data-portfolio-theme="dagboek"] .theme-symbol-compass{display:block;opacity:.11}
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .theme-symbol-shell{
+html[data-portfolio-theme="minimal"] .theme-symbol-shell{
   display:block;
   opacity:.12;
   transform:rotate(-12deg);
   transform-origin:50% 55%;
 }
-html:is([data-portfolio-theme="minimal"],[data-portfolio-theme="minimal-classic"]) .theme-symbol-shell-small{
+html[data-portfolio-theme="minimal"] .theme-symbol-shell-small{
   display:block;
   position:absolute;
   width:50%;
@@ -643,153 +643,4 @@ body.can-edit .theme-switcher{display:flex}
     left:-10%;
     top:-8%;
   }
-}
-
-/* Duin & Zee v2. De gedeelde basis hierboven bewaart minimal-classic exact. */
-html[data-portfolio-theme="minimal"]{
-  --forest:#245b70;
-  --forest-2:#427c89;
-  --leaf:#83aeb0;
-  --sand:#e9d6b3;
-  --cream:#f5eddf;
-  --ink:#243940;
-  --muted:#586d73;
-  --line:#dedbd0;
-  --white:#fffdf8;
-  --shadow:0 20px 54px rgba(58,76,77,.11);
-}
-html[data-portfolio-theme="minimal"] body{
-  background:#f5eddf url('assets/images/duin-zee-strand-v2.webp') right top / cover no-repeat fixed;
-}
-html[data-portfolio-theme="minimal"] .sidebar{
-  background:
-    radial-gradient(ellipse at 100% 100%,rgba(131,174,176,.18),transparent 65%),
-    linear-gradient(165deg,#183f52,#245b70 56%,#285c67);
-  box-shadow:8px 0 35px rgba(31,63,76,.08);
-}
-html[data-portfolio-theme="minimal"] .nav a.active{
-  background:rgba(234,220,187,.17);
-  box-shadow:inset 3px 0 0 #e9d6b3;
-}
-html[data-portfolio-theme="minimal"] .topbar{
-  background:rgba(255,251,241,.94);
-  border-bottom-color:rgba(159,145,116,.2);
-}
-html[data-portfolio-theme="minimal"] .hero{
-  background:
-    linear-gradient(100deg,rgba(255,250,239,.96) 0%,rgba(255,250,239,.87) 43%,rgba(255,250,239,.28) 73%,rgba(255,250,239,.06) 100%),
-    url('assets/images/duin-zee-hero-v2.webp') right bottom / cover;
-  border-color:#e4d8c3;
-  box-shadow:0 22px 60px rgba(91,82,61,.12),inset 0 1px 0 #fffdf8;
-}
-html[data-portfolio-theme="minimal"] .hero h2{color:#243940}
-html[data-portfolio-theme="minimal"] .hero h2 span{color:#245b70}
-html[data-portfolio-theme="minimal"] .hero .lead{color:#435960}
-html[data-portfolio-theme="minimal"] .hero-theme-symbols{
-  right:calc(clamp(300px,32vw,430px) + 4cm);
-  top:48px;
-  width:180px;
-  height:190px;
-  background:url('assets/images/duin-zee-shell-v2.svg') center / contain no-repeat;
-  opacity:.22;
-  transform:rotate(-14deg);
-}
-html[data-portfolio-theme="minimal"] .photo-frame{
-  background:#fffdf7;
-  padding:10px;
-  border-color:#e6dbc8;
-  box-shadow:0 16px 40px rgba(43,66,70,.18),0 3px 8px rgba(121,99,64,.07);
-  transform:rotate(1.5deg);
-}
-html[data-portfolio-theme="minimal"] .hero-photo-card figcaption{color:#3f5960;margin-top:16px}
-html[data-portfolio-theme="minimal"] .pill{
-  background:rgba(255,253,247,.9);
-  color:#355d67;
-  border-color:#e3d8c6;
-}
-html[data-portfolio-theme="minimal"] .section{
-  background:rgba(255,253,248,.97);
-  border-color:#e3dacb;
-  box-shadow:0 10px 32px rgba(93,81,58,.07),inset 0 1px 0 #fff;
-}
-html[data-portfolio-theme="minimal"] .card,
-html[data-portfolio-theme="minimal"] .journey-card,
-html[data-portfolio-theme="minimal"] .topic-card{
-  background:#fffefa;
-  border-color:#e1e1d7;
-}
-html[data-portfolio-theme="minimal"] .quote-card{
-  background:
-    radial-gradient(ellipse at 100% 100%,rgba(223,201,153,.24),transparent 65%),
-    linear-gradient(140deg,#e5efec,#f7f0df);
-  border-color:#dce5dc;
-}
-html[data-portfolio-theme="minimal"] .quote-card strong{color:#30596a}
-html[data-portfolio-theme="minimal"] .section-num,
-html[data-portfolio-theme="minimal"] .section-icon,
-html[data-portfolio-theme="minimal"] .journey-card .num{
-  background:linear-gradient(135deg,#dceceb,#ebf0e9);
-  color:#245b70;
-  border:1px solid #d8e5df;
-}
-.theme-swatch.minimal{background:linear-gradient(135deg,#e9d6b3,#dcebea);box-shadow:inset 9px 0 0 #245b70}
-.theme-swatch.minimal-classic{background:linear-gradient(135deg,#f6ebd5,#dfeef1);box-shadow:inset 9px 0 0 #245b78}
-@media(max-width:700px){
-  html[data-portfolio-theme="minimal"] body{
-    background-size:auto 1050px;
-    background-attachment:scroll;
-    background-repeat:repeat-y;
-  }
-  html[data-portfolio-theme="minimal"] .hero{
-    background:
-      linear-gradient(180deg,rgba(255,250,239,.96),rgba(255,250,239,.87) 48%,rgba(255,250,239,.28)),
-      url('assets/images/duin-zee-hero-v2.webp') right bottom / auto 100%;
-  }
-  html[data-portfolio-theme="minimal"] .photo-frame{transform:none}
-}
-@media(prefers-reduced-motion:reduce){
-  html[data-portfolio-theme="minimal"] .section,
-  html[data-portfolio-theme="minimal"] .hero,
-  html[data-portfolio-theme="minimal"] .card,
-  html[data-portfolio-theme="minimal"] .journey-card,
-  html[data-portfolio-theme="minimal"] .topic-card,
-  html[data-portfolio-theme="minimal"] .photo-frame,
-  html[data-portfolio-theme="minimal"] .pill{transition:none}
-}
-@media print{
-  html[data-portfolio-theme="minimal"] body{background:#fff}
-  html[data-portfolio-theme="minimal"] .hero{background:linear-gradient(135deg,#f5e9d3,#edf3ef)}
-}
-/* De lange naam van het bewaarde thema past ook op smalle schermen. */
-html[data-portfolio-theme="minimal-classic"] .theme-current strong{
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-/* Twee fijne schelpillustraties; het oorspronkelijke thema behoudt zijn SVG's. */
-html[data-portfolio-theme="minimal"] .hero-theme-symbols .theme-symbol{display:none}
-@media(max-width:980px){
-  html[data-portfolio-theme="minimal"] .hero-theme-symbols{right:74px;top:40px;width:165px;height:175px;opacity:.25}
-}
-@media(max-width:700px){
-  html[data-portfolio-theme="minimal"] .hero-theme-symbols{right:38px;top:24px;width:140px;height:150px;opacity:.18}
-}
-
-html[data-portfolio-theme="minimal"] .hero-theme-symbols:after{
-  content:"";
-  position:absolute;
-  left:-112%;
-  top:70%;
-  width:52%;
-  height:52%;
-  background:url('assets/images/duin-zee-shell-v2.svg') center / contain no-repeat;
-  transform:rotate(-30deg);
-  opacity:1;
-}
-@media(max-width:980px){
-  html[data-portfolio-theme="minimal"] .hero-theme-symbols{right:calc(74px + 4cm)}
-}
-@media(max-width:700px){
-  html[data-portfolio-theme="minimal"] .hero-theme-symbols{right:calc(38px + 1.2cm)}
-  html[data-portfolio-theme="minimal"] .hero-theme-symbols:after{left:-30%;top:104%;width:48%;height:48%}
 }
