@@ -5,6 +5,8 @@
   const SUPABASE_KEY='sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
   const BUCKET='portfolio-documents';
   const MAX_BYTES=25*1024*1024;
+  const INIT_TIMEOUT_MS=5*60*1000;
+  const CONVERT_TIMEOUT_MS=10*60*1000;
   const OFFICE_EXTENSIONS=new Set(['docx','xlsx','pptx']);
   const LO_CDN='https://erseco.github.io/libreoffice-document-converter/';
   const LO_MODULE=`${LO_CDN}dist/browser.js`;
@@ -230,7 +232,7 @@
     progressMessage=msg||null;
     if(converterPromise) return converterPromise;
 
-    setMessage(msg,'LibreOffice-converter laden… De eerste keer wordt ongeveer 240 MB gedownload.','busy');
+    setMessage(msg,'LibreOffice-converter laden… De eerste keer wordt ongeveer 240 MB gedownload. Op tragere apparaten kan dit enkele minuten duren.','busy');
     console.info('[LibreOffice] Module laden.');
 
     converterPromise=import(LO_MODULE).then(async mod=>{
@@ -255,8 +257,8 @@
       console.info('[LibreOffice] Initialisatie starten.');
       await withTimeout(
         converter.initialize(),
-        180000,
-        'LibreOffice initialiseerde niet binnen 3 minuten.'
+        INIT_TIMEOUT_MS,
+        'LibreOffice initialiseerde niet binnen 5 minuten.'
       );
       console.info('[LibreOffice] Initialisatie geslaagd.');
       return converter;
@@ -272,14 +274,14 @@
     bytes=await repairOpenXmlPackage(bytes);
 
     const converter=await getLibreOfficeConverter(msg);
-    setMessage(msg,'Document met LibreOffice omzetten naar PDF…','busy');
+    setMessage(msg,'Document met LibreOffice omzetten naar PDF… Op tragere apparaten kan dit enkele minuten duren.','busy');
     progressMessage=msg||null;
     console.info(`[LibreOffice] Conversie starten: ${file.name}, ${bytes.length} bytes.`);
 
     const result=await withTimeout(
       converter.convert(bytes,{outputFormat:'pdf'},file.name),
-      180000,
-      'De LibreOffice-conversie duurde langer dan 3 minuten.'
+      CONVERT_TIMEOUT_MS,
+      'De LibreOffice-conversie duurde langer dan 10 minuten.'
     );
     const pdfBytes=copyToUint8Array(result?.data);
     if(!pdfBytes?.length) throw new Error('LibreOffice leverde geen PDF op.');
