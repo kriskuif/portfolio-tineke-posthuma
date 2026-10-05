@@ -5,7 +5,7 @@
   const SUPABASE_KEY='sb_publishable_YWB-oyzMgnZqE7YDX1lKyg_HDGcdLeU';
   const BUCKET='portfolio-documents';
   const MAX_BYTES=25*1024*1024;
-  const INIT_TIMEOUT_MS=5*60*1000;
+  const INIT_TIMEOUT_MS=15*60*1000;
   const CONVERT_TIMEOUT_MS=10*60*1000;
   const OFFICE_EXTENSIONS=new Set(['docx','xlsx','pptx']);
   const LO_CDN='https://erseco.github.io/libreoffice-document-converter/';
@@ -232,7 +232,7 @@
     progressMessage=msg||null;
     if(converterPromise) return converterPromise;
 
-    setMessage(msg,'LibreOffice-converter laden… De eerste keer wordt ongeveer 240 MB gedownload. Op tragere apparaten kan dit enkele minuten duren.','busy');
+    setMessage(msg,'LibreOffice voorbereiden… De eerste keer wordt ongeveer 240 MB geladen. Op tragere apparaten kan dit meerdere minuten duren.','busy');
     console.info('[LibreOffice] Module laden.');
 
     converterPromise=import(LO_MODULE).then(async mod=>{
@@ -251,14 +251,14 @@
           const percent=Number(info?.percent);
           const pct=Number.isFinite(percent)&&percent>=0?` ${Math.round(percent)}%`:'';
           const detail=String(info?.message||'').trim();
-          setMessage(progressMessage,`LibreOffice-converter laden…${pct}${detail?` — ${detail}`:''}`,'busy');
+          setMessage(progressMessage,`LibreOffice voorbereiden…${pct}${detail?` — ${detail}`:''}`,'busy');
         }
       });
       console.info('[LibreOffice] Initialisatie starten.');
       await withTimeout(
         converter.initialize(),
         INIT_TIMEOUT_MS,
-        'LibreOffice initialiseerde niet binnen 5 minuten.'
+        'LibreOffice kon niet binnen 15 minuten worden voorbereid.'
       );
       console.info('[LibreOffice] Initialisatie geslaagd.');
       return converter;
@@ -375,9 +375,10 @@
       await window.portfolioFiles?.reload?.();
       setTimeout(()=>overlay.remove(),1400);
     }catch(err){
-      console.error('[LibreOffice] DOCX/XLSX/PPTX-conversie mislukt:',err);
+      console.error('[LibreOffice] DOCX/XLSX/PPTX-verwerking mislukt:',err);
       const raw=String(err?.message||'Onbekende fout.');
-      setMessage(msg,`LibreOffice-conversie mislukt: ${raw}`,'error');
+      const preparationFailure=/voorbereid|initialis|browserisolatie|browsermodule|converter laden/i.test(raw);
+      setMessage(msg,`${preparationFailure?'LibreOffice voorbereiden':'LibreOffice-conversie'} mislukt: ${raw}`,'error');
       button.disabled=false;
     }finally{
       progressMessage=null;
