@@ -73,7 +73,7 @@
 (() => {
   if(document.querySelector('script[data-libreoffice-upload-override]')) return;
   const script=document.createElement('script');
-  script.src='libreoffice-upload-override.js?v=20261005-10min';
+  script.src='libreoffice-upload-override.js?v=20261005-15min-init';
   script.async=true;
   script.dataset.libreofficeUploadOverride='1';
   document.head.appendChild(script);
