@@ -21,6 +21,8 @@
   let converterPromise=null;
   let progressMessage=null;
   let isolationPromise=null;
+  let lastStage='';
+  let lastProgressAt=0;
 
   const extFromName=name=>{
     const clean=String(name||'').split(/[?#]/)[0];
@@ -251,7 +253,9 @@
           const percent=Number(info?.percent);
           const pct=Number.isFinite(percent)&&percent>=0?` ${Math.round(percent)}%`:'';
           const detail=String(info?.message||'').trim();
-          setMessage(progressMessage,`LibreOffice voorbereiden…${pct}${detail?` — ${detail}`:''}`,'busy');
+          const stage=detail||'LibreOffice starten';
+          if(stage!==lastStage){lastStage=stage;lastProgressAt=Date.now();console.info('[LibreOffice] Initialisatiefase:',stage);}
+          setMessage(progressMessage,`LibreOffice voorbereiden…${pct}${detail?` — ${detail}`:''}. Dit percentage is een indicatie, geen gemeten voortgang.`,'busy');
         }
       });
       console.info('[LibreOffice] Initialisatie starten.');
@@ -278,11 +282,19 @@
     progressMessage=msg||null;
     console.info(`[LibreOffice] Conversie starten: ${file.name}, ${bytes.length} bytes.`);
 
-    const result=await withTimeout(
-      converter.convert(bytes,{outputFormat:'pdf'},file.name),
-      CONVERT_TIMEOUT_MS,
-      'De LibreOffice-conversie duurde langer dan 10 minuten.'
-    );
+    const startedAt=Date.now();
+    const watchdog=setInterval(()=>{
+      const elapsed=Math.floor((Date.now()-startedAt)/1000);
+      setMessage(msg,`Document wordt verwerkt… ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')} verstreken. De converter geeft tijdens deze stap geen betrouwbare voortgang door.`,'busy');
+    },15000);
+    let result;
+    try{
+      result=await withTimeout(
+        converter.convert(bytes,{outputFormat:'pdf'},file.name),
+        CONVERT_TIMEOUT_MS,
+        'Het document kon niet binnen 10 minuten worden verwerkt. Dit kan op een Chromebook wijzen op een vastgelopen LibreOffice-worker of onvoldoende geheugen. Probeer het document als PDF te downloaden via Google Documenten en upload die PDF rechtstreeks.'
+      );
+    }finally{clearInterval(watchdog);}
     const pdfBytes=copyToUint8Array(result?.data);
     if(!pdfBytes?.length) throw new Error('LibreOffice leverde geen PDF op.');
     console.info(`[LibreOffice] Conversie geslaagd: ${pdfBytes.length} PDF-bytes.`);
