@@ -278,6 +278,7 @@
   }
 
   function openDeleteFlow(row,editButton){
+    window.__portfolioLastEditButton=editButton;
     const observer=new MutationObserver(()=>{
       const editor=document.querySelector('.file-title-overlay');
       const deleteAction=editor?.querySelector('[data-title-delete]');
@@ -292,7 +293,46 @@
     setTimeout(()=>observer.disconnect(),2500);
   }
 
+  function enhanceTitleEditor(){
+    document.querySelectorAll('.file-title-overlay').forEach(overlay=>{
+      if(overlay.dataset.categoryEnhanced) return;
+      overlay.dataset.categoryEnhanced='1';
+      const input=overlay.querySelector('input');
+      const save=overlay.querySelector('[data-title-save]')||[...overlay.querySelectorAll('button')].find(b=>b.textContent.trim()==='Opslaan');
+      if(!input||!save) return;
+      const title=input.value.trim();
+      const categoryRow=document.querySelector('.portfolio-file-row .portfolio-file-link');
+      const selection=[...document.querySelectorAll('.portfolio-file-row')].find(row=>row.querySelector('.portfolio-file-edit')===window.__portfolioLastEditButton);
+      const link=selection?.querySelector('[data-view-file]');
+      const category=link?.dataset.viewFile;
+      if(!category) return;
+      const wrapper=document.createElement('label');
+      wrapper.style.cssText='display:block;margin:12px 0;font-weight:700';
+      wrapper.textContent='Soort bewijsstuk';
+      const select=document.createElement('select');
+      select.style.cssText='display:block;width:100%;padding:10px;margin-top:7px;border:1px solid #d7dfda;border-radius:9px';
+      const choices=window.portfolioFiles?.getCategories?.()||[];
+      for(const choice of [...new Set([category,...choices])]){
+        const option=document.createElement('option');option.value=choice;option.textContent=choice;select.appendChild(option);
+      }
+      select.value=category;
+      wrapper.appendChild(select);
+      input.closest('label')?.after(wrapper) || input.after(wrapper);
+      save.addEventListener('click',async()=>{
+        if(select.value===category) return;
+        const record=window.portfolioFiles?.getFiles?.().find(item=>String(item.category)===category&&item.title===title);
+        if(!record){alert('Het bewijsstuk kon niet worden gevonden.');return;}
+        const {data}=await client.auth.getSession();
+        if(!data?.session){alert('Log opnieuw in om het soort bewijsstuk te wijzigen.');return;}
+        const {error}=await client.from('portfolio_files').update({category:select.value}).eq('id',record.id);
+        if(error){alert('Categorie wijzigen mislukt: '+error.message);return;}
+        await window.portfolioFiles?.reload?.();
+      });
+    });
+  }
+
   function enhanceRows(){
+    enhanceTitleEditor();
     document.querySelectorAll('.portfolio-file-row').forEach(row=>{
       if(row.querySelector('.portfolio-file-delete')) return;
       const editButton=row.querySelector('.portfolio-file-edit');
@@ -443,5 +483,6 @@
 
   enhanceRows();
   enhanceUploadDialogs();
+  document.addEventListener('click',event=>{const button=event.target.closest?.('.portfolio-file-edit');if(button) window.__portfolioLastEditButton=button;},true);
   new MutationObserver(()=>{enhanceRows();enhanceUploadDialogs();}).observe(document.body,{childList:true,subtree:true});
 })();
