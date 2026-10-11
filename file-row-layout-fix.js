@@ -159,15 +159,19 @@
     return zip.generateAsync({type:'uint8array',compression:'DEFLATE',compressionOptions:{level:6}});
   }
 
-  async function convertOfficeToPdf(file){
+  async function convertOfficeToPdf(file,onStage=()=>{}){
     const extension=extFromName(file.name);
     let bytes=new Uint8Array(await file.arrayBuffer());
+    onStage(25,'Document gelezen');
     if(extension==='docx'){
       try{bytes=await repairDocx(bytes);}catch(err){console.warn('DOCX vooraf herstellen overgeslagen:',err);}
     }
     const Ream=await getReam();
+    onStage(50,'PDF-converter geladen');
     const doc=Ream.parse(bytes);
+    onStage(60,'Document omzetten naar PDF');
     const pdf=await doc.convert('pdf');
+    onStage(80,'PDF gemaakt');
     if(!pdf?.length) throw new Error('De converter leverde geen PDF op.');
     return new File([pdf],`${baseName(file.name)}.pdf`,{type:'application/pdf',lastModified:Date.now()});
   }
@@ -190,8 +194,8 @@
     if(file.size>MAX_BYTES) throw new Error('Het bestand is groter dan 25 MB.');
     if(extension==='pdf') return {file:new File([file],file.name,{type:'application/pdf',lastModified:file.lastModified}),success:'PDF toegevoegd.'};
     if(OFFICE_TO_PDF.has(extension)){
-      setMessage(msg,'Document omzetten naar PDF…','busy');
-      const pdf=await convertOfficeToPdf(file);
+      setMessage(msg,'Document voorbereiden… 0%','busy');
+      const pdf=await convertOfficeToPdf(file,(percent,stage)=>setMessage(msg,`${stage}… ${percent}%`,'busy'));
       if(pdf.size>MAX_BYTES) throw new Error('De omgezette PDF is groter dan 25 MB.');
       return {file:pdf,success:'Document is omgezet naar PDF en toegevoegd.'};
     }
@@ -238,6 +242,22 @@
     }
   }
 
+  function friendlyUploadError(err,file,phase){
+    const raw=String(err?.message||err||'');
+    const extension=extFromName(file?.name);
+    if(/niet meer ingelogd/i.test(raw)) return 'Je bent uitgelogd. Log opnieuw in en probeer het opnieuw.';
+    if(/25 MB/i.test(raw)) return 'Het bestand is te groot (maximaal 25 MB).';
+    if(phase==='refreshing') return 'Het bestand is opgeslagen, maar het overzicht kon niet worden vernieuwd. Ververs de pagina.';
+    if(phase==='uploading') return 'Uploaden is mislukt. Controleer de internetverbinding en probeer het opnieuw.';
+    if(/Failed to fetch|NetworkError|netwerk|bibliotheek kon niet|converter kon niet worden geladen|Loading chunk/i.test(raw)) return 'De converter kon niet worden geladen. Controleer de internetverbinding en probeer opnieuw.';
+    if(OFFICE_TO_PDF.has(extension)){
+      if(/zip|openxml|ongeldig|invalid|corrupt|parse|xml/i.test(raw)) return 'Het document kon niet worden gelezen. Sla het opnieuw op als DOCX of PDF.';
+      return 'Omzetten naar PDF is niet gelukt. Probeer opnieuw of upload het bestand als PDF.';
+    }
+    if(HEIC_IMAGES.has(extension)) return 'Omzetten naar JPEG is niet gelukt. Probeer opnieuw of upload een JPG of PNG.';
+    return raw||'Uploaden is niet gelukt. Probeer het opnieuw.';
+  }
+
   async function handleUploadSave(event,button){
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -253,26 +273,23 @@
     if(!client){setMessage(msg,'Uploaden is tijdelijk niet beschikbaar.','error');return;}
 
     button.disabled=true;
+    const convertingOffice=OFFICE_TO_PDF.has(extFromName(file.name));
+    let phase='converting';
     try{
       const {data:sessionData}=await client.auth.getSession();
       const session=sessionData?.session;
       if(!session) throw new Error('Je bent niet meer ingelogd. Log opnieuw in.');
       const result=await prepareUpload(file,msg);
-      setMessage(msg,result.file.type==='application/pdf'?'PDF uploaden…':'Bestand uploaden…','busy');
+      phase='uploading';
+      setMessage(msg,convertingOffice?'PDF uploaden… 80%':result.file.type==='application/pdf'?'PDF uploaden…':'Bestand uploaden…','busy');
       await uploadPrepared(category,title,result.file,session);
-      setMessage(msg,result.success,'success');
+      phase='refreshing';
       await window.portfolioFiles?.reload?.();
+      setMessage(msg,convertingOffice?'PDF toegevoegd — 100%':result.success,'success');
       setTimeout(()=>overlay.remove(),900);
     }catch(err){
       console.error('Bestand voorbereiden/uploaden mislukt:',err);
-      const extension=extFromName(file?.name);
-      let text=err?.message||'Uploaden is mislukt.';
-      if(OFFICE_TO_PDF.has(extension)&&!/25 MB|ingelogd|ondersteund|upload/i.test(text)){
-        text='Het document kon niet naar PDF worden omgezet. Probeer het opnieuw of upload het document als PDF.';
-      }else if(HEIC_IMAGES.has(extension)&&!/25 MB|ingelogd|ondersteund|upload/i.test(text)){
-        text='De HEIC/HEIF-afbeelding kon niet naar JPEG worden omgezet. Probeer het opnieuw of upload de afbeelding als JPG of PNG.';
-      }
-      setMessage(msg,text,'error');
+      setMessage(msg,friendlyUploadError(err,file,phase),'error');
       button.disabled=false;
     }
   }
