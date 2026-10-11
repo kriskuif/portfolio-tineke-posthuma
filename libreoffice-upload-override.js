@@ -21,8 +21,6 @@
   let converterPromise=null;
   let progressMessage=null;
   let isolationPromise=null;
-  let lastStage='';
-  let lastProgressAt=0;
 
   const extFromName=name=>{
     const clean=String(name||'').split(/[?#]/)[0];
@@ -35,6 +33,18 @@
     return (dot>0?clean.slice(0,dot):clean)||'bestand';
   };
   const safeName=name=>String(name||'bestand').replace(/[^a-z0-9._-]+/gi,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(-120)||'bestand';
+
+  function friendlyOfficeError(error,phase='converting'){
+    const raw=String(error?.message||error||'');
+    if(/niet meer ingelogd/i.test(raw)) return 'Je bent uitgelogd. Log opnieuw in en probeer het opnieuw.';
+    if(/25 MB/i.test(raw)) return 'Dit bestand is groter dan 25 MB. Kies een kleiner bestand.';
+    if(/10 minuten|15 minuten|time.?out/i.test(raw)) return 'Het omzetten duurt te lang. Sla het document op als PDF en upload die PDF.';
+    if(/browserisolatie|cross.?origin|herlaad de pagina/i.test(raw)) return 'De converter kon niet starten. Ververs de pagina en probeer het opnieuw.';
+    if(/ZIP|OpenXML|beschadigd|ongeldig document/i.test(raw)) return 'Het document kon niet worden gelezen. Sla het opnieuw op als DOCX of PDF.';
+    if(phase==='uploading') return 'De PDF is gemaakt, maar uploaden is niet gelukt. Controleer je internetverbinding en probeer opnieuw.';
+    if(phase==='refreshing') return 'De PDF is geüpload, maar het overzicht kon niet worden vernieuwd. Ververs de pagina.';
+    return 'Omzetten naar PDF is niet gelukt. Probeer opnieuw of upload het bestand als PDF.';
+  }
 
   function setMessage(node,text,state=''){
     if(!node) return;
@@ -234,7 +244,7 @@
     progressMessage=msg||null;
     if(converterPromise) return converterPromise;
 
-    setMessage(msg,'LibreOffice voorbereiden… De eerste keer wordt ongeveer 240 MB geladen. Op tragere apparaten kan dit meerdere minuten duren.','busy');
+    setMessage(msg,'PDF-converter laden…','busy');
     console.info('[LibreOffice] Module laden.');
 
     converterPromise=import(LO_MODULE).then(async mod=>{
@@ -252,10 +262,7 @@
         onProgress:info=>{
           const percent=Number(info?.percent);
           const pct=Number.isFinite(percent)&&percent>=0?` ${Math.round(percent)}%`:'';
-          const detail=String(info?.message||'').trim();
-          const stage=detail||'LibreOffice starten';
-          if(stage!==lastStage){lastStage=stage;lastProgressAt=Date.now();console.info('[LibreOffice] Initialisatiefase:',stage);}
-          setMessage(progressMessage,`LibreOffice voorbereiden…${pct}${detail?` — ${detail}`:''}. Dit percentage is een indicatie, geen gemeten voortgang.`,'busy');
+          setMessage(progressMessage,`PDF-converter laden…${pct}`,'busy');
         }
       });
       console.info('[LibreOffice] Initialisatie starten.');
@@ -278,23 +285,15 @@
     bytes=await repairOpenXmlPackage(bytes);
 
     const converter=await getLibreOfficeConverter(msg);
-    setMessage(msg,'Document met LibreOffice omzetten naar PDF… Op tragere apparaten kan dit enkele minuten duren.','busy');
+    setMessage(msg,'Document omzetten naar PDF…','busy');
     progressMessage=msg||null;
     console.info(`[LibreOffice] Conversie starten: ${file.name}, ${bytes.length} bytes.`);
 
-    const startedAt=Date.now();
-    const watchdog=setInterval(()=>{
-      const elapsed=Math.floor((Date.now()-startedAt)/1000);
-      setMessage(msg,`Document wordt verwerkt… ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')} verstreken. De converter geeft tijdens deze stap geen betrouwbare voortgang door.`,'busy');
-    },15000);
-    let result;
-    try{
-      result=await withTimeout(
-        converter.convert(bytes,{outputFormat:'pdf'},file.name),
-        CONVERT_TIMEOUT_MS,
-        'Het document kon niet binnen 10 minuten worden verwerkt. Dit kan op een Chromebook wijzen op een vastgelopen LibreOffice-worker of onvoldoende geheugen. Probeer het document als PDF te downloaden via Google Documenten en upload die PDF rechtstreeks.'
-      );
-    }finally{clearInterval(watchdog);}
+    const result=await withTimeout(
+      converter.convert(bytes,{outputFormat:'pdf'},file.name),
+      CONVERT_TIMEOUT_MS,
+      'Het omzetten duurde langer dan 10 minuten.'
+    );
     const pdfBytes=copyToUint8Array(result?.data);
     if(!pdfBytes?.length) throw new Error('LibreOffice leverde geen PDF op.');
     console.info(`[LibreOffice] Conversie geslaagd: ${pdfBytes.length} PDF-bytes.`);
@@ -366,13 +365,15 @@
           button.disabled=false;
         }
       }catch(err){
-        setMessage(msg,`LibreOffice kon niet worden voorbereid: ${String(err?.message||err)}`,'error');
+        console.error('[LibreOffice] voorbereiden mislukt:',err);
+        setMessage(msg,friendlyOfficeError(err),'error');
         button.disabled=false;
       }
       return;
     }
 
     button.disabled=true;
+    let phase='converting';
     try{
       const {data:sessionData}=await client.auth.getSession();
       const session=sessionData?.session;
@@ -381,16 +382,17 @@
       const pdf=await convertWithLibreOffice(file,msg);
       if(pdf.size>MAX_BYTES) throw new Error('De omgezette PDF is groter dan 25 MB.');
 
-      setMessage(msg,'LibreOffice-conversie geslaagd — PDF uploaden…','busy');
+      phase='uploading';
+      setMessage(msg,'PDF gemaakt. Uploaden…','busy');
       await uploadPdf(category,title,pdf,session);
-      setMessage(msg,'Document is met LibreOffice omgezet naar PDF en toegevoegd.','success');
+      phase='refreshing';
+      setMessage(msg,'PDF geüpload. Overzicht vernieuwen…','busy');
       await window.portfolioFiles?.reload?.();
+      setMessage(msg,'PDF toegevoegd.','success');
       setTimeout(()=>overlay.remove(),1400);
     }catch(err){
       console.error('[LibreOffice] DOCX/XLSX/PPTX-verwerking mislukt:',err);
-      const raw=String(err?.message||'Onbekende fout.');
-      const preparationFailure=/voorbereid|initialis|browserisolatie|browsermodule|converter laden/i.test(raw);
-      setMessage(msg,`${preparationFailure?'LibreOffice voorbereiden':'LibreOffice-conversie'} mislukt: ${raw}`,'error');
+      setMessage(msg,friendlyOfficeError(err,phase),'error');
       button.disabled=false;
     }finally{
       progressMessage=null;
