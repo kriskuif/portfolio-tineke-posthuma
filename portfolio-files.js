@@ -29,7 +29,7 @@
     .evidence-register-add:hover,.evidence-register-add:focus-visible{background:#e3eee7;border-color:#aec5b7;outline:none}
     body:not(.can-edit) .evidence-register-add{display:none}
     .evidence-register-empty{margin:0;color:#89958e;font-style:italic}
-    .evidence-category-card .topic-content{margin-top:0}
+    .evidence-category-card .topic-content{margin-top:0}\n    .evidence-edit-btn{margin-left:8px;border:1px solid #d9e4dd;border-radius:8px;background:#fff;color:#315f4b;padding:5px 9px;cursor:pointer;font:inherit;font-size:.78rem}\n    body:not(.can-edit) .evidence-edit-btn{display:none}
     .portfolio-file-list{display:grid;gap:7px;margin:10px 0 2px}
     .portfolio-file-link{width:100%;display:flex;align-items:center;gap:10px;border:1px solid #dce5df;background:#fff;color:#24513f;border-radius:11px;padding:10px 12px;text-align:left;font:inherit;font-weight:800;cursor:pointer}
     .portfolio-file-link:hover,.portfolio-file-link:focus-visible{background:#f0f5f1;border-color:#b9cbbf;outline:none}
@@ -256,10 +256,58 @@
           <div class="topic-card-title"><span class="topic-index">Onderdeel 07.${index+1}</span><h4>${esc(category)}</h4></div>
           <span class="topic-state">${items.length} ${items.length===1?'bewijsstuk':'bewijsstukken'}</span>
         </div>
-        <div class="topic-content"><div class="portfolio-file-list">${items.map(item=>`<button type="button" class="portfolio-file-link" data-view-file="${esc(item.category)}" data-file-index="${item._categoryIndex}">${esc(item.title)}</button>`).join('')}</div></div>
+        <div class="topic-content"><div class="portfolio-file-list">${items.map(item=>`<button type="button" class="portfolio-file-link" data-view-file="${esc(item.category)}" data-file-index="${item._categoryIndex}">${esc(item.title)}</button><button type="button" class="evidence-edit-btn" data-edit-evidence="${esc(item.id)}" title="Bewijsstuk aanpassen" aria-label="${esc(item.title)} aanpassen">✎ Aanpassen</button>`).join('')}</div></div>
       </article>`;
     }).join('');
     bindViewButtons();
+    target.querySelectorAll('[data-edit-evidence]').forEach(button=>{
+      button.addEventListener('click',()=>openEvidenceEditor(button.dataset.editEvidence));
+    });
+  }
+
+  function openEvidenceEditor(id){
+    if(!document.body.classList.contains('can-edit')) return;
+    const item=files.find(row=>String(row.id)===String(id));
+    if(!item) return;
+    const overlay=document.createElement('div');
+    overlay.className='file-upload-overlay';
+    overlay.innerHTML=`<section class="file-upload-dialog" role="dialog" aria-modal="true" aria-label="Bewijsstuk aanpassen">
+      <header class="file-upload-head"><strong>Bewijsstuk aanpassen</strong><button type="button" data-edit-close aria-label="Sluiten">×</button></header>
+      <div class="file-upload-body">
+        <label>Naam<input type="text" maxlength="200" data-edit-title value="${esc(item.title)}"></label>
+        <label>Soort bewijsstuk<select data-edit-category>${categoryOptions(item._displayCategory||item.category)}</select></label>
+        <p data-edit-message aria-live="polite"></p>
+        <div class="file-upload-actions"><button type="button" data-edit-cancel>Annuleren</button><button type="button" data-edit-save>Opslaan</button></div>
+      </div>
+    </section>`;
+    document.body.appendChild(overlay);
+    const close=()=>overlay.remove();
+    overlay.querySelector('[data-edit-close]').addEventListener('click',close);
+    overlay.querySelector('[data-edit-cancel]').addEventListener('click',close);
+    overlay.addEventListener('click',event=>{if(event.target===overlay) close();});
+    overlay.querySelector('[data-edit-save]').addEventListener('click',async()=>{
+      const title=overlay.querySelector('[data-edit-title]').value.trim();
+      const category=overlay.querySelector('[data-edit-category]').value;
+      const message=overlay.querySelector('[data-edit-message]');
+      const save=overlay.querySelector('[data-edit-save]');
+      if(!title||!category){message.textContent='Vul een naam in en kies een soort bewijsstuk.';return;}
+      save.disabled=true;
+      message.textContent='Wijzigingen opslaan…';
+      try{
+        const {data}=await client.auth.getSession();
+        if(!data?.session) throw new Error('Je bent niet meer ingelogd.');
+        const changes={title,category};
+        if(category!==item.category) changes.sort_order=await nextSortOrder(category);
+        const {error}=await client.from('portfolio_files').update(changes).eq('id',item.id);
+        if(error) throw error;
+        await loadFiles();
+        close();
+      }catch(error){
+        message.textContent='Opslaan mislukt: '+String(error?.message||error);
+        save.disabled=false;
+      }
+    });
+    overlay.querySelector('[data-edit-title]').focus();
   }
 
   function bindViewButtons(){
