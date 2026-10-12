@@ -308,11 +308,12 @@
     return `<svg class="export-route" aria-hidden="true" viewBox="0 0 280 230"><path d="M20 210C70 177 116 190 101 145C88 105 35 125 58 82C82 37 150 90 178 52C199 24 232 16 258 28" fill="none" stroke="currentColor" stroke-dasharray="2 16" stroke-linecap="round" stroke-width="7"/><circle cx="20" cy="210" r="7" fill="currentColor"/><path d="M245 16L266 28L249 45" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/></svg>`;
   }
 
+  const introText=selector=>String(document.querySelector(selector)?.textContent||'').trim();
   async function buildExportDocument(){
     const imageData = await imageAsDataUrl();
     const theme = exportThemeProfile();
     const chapters = groups.map(group => `<section class="chapter"><div class="chapter-head"><span>${group.n}</span><div><h2>${esc(group.title)}</h2><p>${esc(group.sub)}</p></div></div>${group.topics.map((topic,index)=>topicHtml(topic,`${group.n}.${index+1}`)).join('')}</section>`).join('');
-    const photo = imageData ? `<img class="portrait" src="${imageData}" alt="Tineke Posthuma">` : '';
+    const photo = imageData ? `<figure style="margin:0"><img class="portrait" src="${imageData}" alt="Tineke Posthuma"><figcaption style="font-size:12px;text-align:center;color:${theme.muted};margin-top:8px">${esc(introText('#start .hero-photo-card figcaption'))}</figcaption></figure>` : '';
     const motif = exportThemeMotif(theme.id);
     return `<!DOCTYPE html><html lang="nl" data-portfolio-theme="${theme.id}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio Tineke Posthuma · Wandeltrainer 3</title><style>
       @page{margin:18mm}
@@ -353,7 +354,7 @@
         .cover,.intro,.chapter,.topic{break-inside:avoid}
       }
       @media(max-width:650px){.page{padding:15px}.cover{grid-template-columns:1fr}.cover h1{font-size:42px}.portrait{max-width:260px}}
-    </style></head><body><div class="page"><header class="cover"><div><div class="eyebrow">Portfolio · Wandeltrainer 3</div><h1>Tineke <span>Posthuma</span></h1><p>Een persoonlijk portfolio over mijn ontwikkeling als wandeltrainer, met praktijkervaringen, trainingsplannen, feedback, reflecties en bewijsstukken.</p><span class="theme-label">Thema: ${esc(theme.name)}</span></div>${photo}${motif}</header><section class="intro"><h2>Over dit portfolio</h2><p>Deze website is opgezet als digitaal portfolio voor Wandeltrainer 3. Hier komen de persoonlijke teksten, praktijkvoorbeelden, trainingsplannen, reflecties en bewijsstukken van Tineke samen in één overzichtelijk geheel.</p></section>${chapters}<footer>Portfolio Tineke Posthuma · Wandeltrainer 3</footer></div></body></html>`;
+    </style></head><body><div class="page"><header class="cover"><div><div class="eyebrow">Portfolio · Wandeltrainer 3</div><h1>Tineke <span>Posthuma</span></h1><p>${esc(introText('#start .hero-copy .lead'))}</p><span class="theme-label">Thema: ${esc(theme.name)}</span></div>${photo}${motif}</header><section class="intro"><h2>Over dit portfolio</h2><p>${esc(introText('#over .intro-grid .card:not(.quote-card) p'))}</p><blockquote style="font-family:Georgia,serif;color:${theme.accent};margin:14px 0 0;font-size:17px">${esc(introText('#over .intro-grid .quote-card strong'))}</blockquote></section>${chapters}<footer>Portfolio Tineke Posthuma · Wandeltrainer 3</footer></div></body></html>`;
   }
 
   async function openSettings(){
