@@ -150,10 +150,6 @@
     if(overview&&!overview.querySelector('.journey-card[data-chapter-key="evidence"]')){
       overview.insertAdjacentHTML('beforeend','<article class="journey-card" data-chapter-key="evidence"><div class="num">08</div><h4>Bewijsstukkenregister</h4><p>Alle bewijsstukken overzichtelijk geordend per soort.</p><div class="mini-tags"><span>Bewijsstukken</span><span>Documenten</span></div><a href="#hoofdstuk-8">Bekijk hoofdstuk</a></article>');
     }
-    const chapter7Card=document.querySelector('#overzicht .journey-card[data-chapter-key="ch7"]');
-    chapter7Card?.querySelectorAll('.mini-tags span').forEach(tag=>{
-      if(tag.textContent.trim().toLowerCase()==='bewijsstukken') tag.remove();
-    });
 
     if(!document.querySelector('.portfolio-group[data-chapter-key="evidence"]')){
       const footer=document.querySelector('main > footer');

@@ -90,6 +90,46 @@
   function titleOf(key){
     return chapterMap.get(key)?.section.querySelector('.chapter-heading h3')?.textContent?.trim()||chapterMap.get(key)?.group.title||key;
   }
+  // Render the overview badges from the actual, saved topic order.
+  // Overview cards are not separate content: they must never retain stale labels
+  // after an item is added, removed, or moved between chapters.
+  function syncOverviewTopics(){
+    for(const key of keys){
+      const item=chapterMap.get(key);
+      if(!item)continue;
+      const badges=item.card.querySelector('.mini-tags');
+      if(!badges)continue;
+
+      const names=item.group.topics.map(topic=>String(topic.title||'').trim()).filter(Boolean);
+      if(key==='evidence'){
+        // Evidence categories live in portfolio_files rather than groups.
+        // Read the current register so that uploads/removals are reflected too.
+        evidence.querySelectorAll('#evidence-register-topics .evidence-category-card .topic-card-title h4')
+          .forEach(heading=>{
+            const label=heading.textContent.trim();
+            if(label)names.push(label);
+          });
+      }
+
+      // Replace only the badges; keep the user's chapter title, overview
+      // description, links, and any saved chapter metadata untouched.
+      badges.replaceChildren();
+      if(names.length){
+        const fragment=document.createDocumentFragment();
+        names.forEach(label=>{
+          const badge=document.createElement('span');
+          badge.textContent=label;
+          fragment.appendChild(badge);
+        });
+        badges.appendChild(fragment);
+      }else{
+        const badge=document.createElement('span');
+        badge.className='overview-empty-tag';
+        badge.textContent='Nog geen onderdelen';
+        badges.appendChild(badge);
+      }
+    }
+  }
   function anchorNode(section){
     return section.parentElement?.classList.contains('admin-notes-row')?section.parentElement:section;
   }
@@ -131,6 +171,7 @@
       subtitle.textContent='Acht hoofdstukken met de bijbehorende onderdelen.';
     }
     renderChapters();
+    syncOverviewTopics();
     // Dynamic evidence categories are rendered by the file manager separately.
     evidence.querySelectorAll('.evidence-category-card .topic-index').forEach((el,i)=>{
       el.textContent='Onderdeel '+num(Number(evidence.dataset.group))+'.'+(i+1+chapterMap.get('evidence').group.topics.length);
@@ -393,6 +434,8 @@
     finally{openButton.disabled=false;}
   });
 
+  document.addEventListener('portfolio:files-loaded',syncOverviewTopics);
+  document.addEventListener('portfolio:structure-changed',syncOverviewTopics);
   fetchSaved().then(layout=>{current=layout;renderLayout(layout);}).catch(error=>{
     console.error('Portfolio-indeling laden mislukt:',error);
     renderLayout(current);
