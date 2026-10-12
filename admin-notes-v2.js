@@ -16,8 +16,10 @@
     { selector: '#hoofdstuk-2', key: 'admin:chapter:2', label: 'Doelgroep & doelen' },
     { selector: '#hoofdstuk-3', key: 'admin:chapter:3', label: 'Planning & voorbereiding' },
     { selector: '#hoofdstuk-4', key: 'admin:chapter:4', label: 'Uitvoering & bewijs' },
-    { selector: '#hoofdstuk-5', key: 'admin:chapter:5', label: 'Evaluatie & feedback' },
-    { selector: '#hoofdstuk-6', key: 'admin:chapter:6', label: 'Ontwikkeling & reflectie' }
+    { selector: '#hoofdstuk-5', key: 'admin:chapter:observaties', label: 'Observaties & Opdrachten' },
+    { selector: '#hoofdstuk-6', key: 'admin:chapter:5', label: 'Evaluatie & feedback' },
+    { selector: '#hoofdstuk-7', key: 'admin:chapter:6', label: 'Ontwikkeling & reflectie' },
+    { selector: '#hoofdstuk-8', key: 'admin:chapter:8', label: 'Bewijsstukkenregister' }
   ];
   const RIBBON = { key: 'admin:ribbon', label: 'Lint' };
   const ALLOWED_KEYS = new Set([...TARGETS.map(item => item.key), RIBBON.key]);

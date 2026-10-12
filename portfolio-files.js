@@ -128,37 +128,37 @@
 
   function ensurePortfolioStructure(){
     try{
-      if(typeof groups!=='undefined'&&groups[5]){
-        const next=groups[5].topics.filter(topic=>!['Bewijsstukkenregister','Bijlagen'].includes(String(topic?.title||'')));
-        if(next.length!==groups[5].topics.length){
-          groups[5].topics=next;
+      if(typeof groups!=='undefined'&&groups[6]){
+        const next=groups[6].topics.filter(topic=>!['Bewijsstukkenregister','Bijlagen'].includes(String(topic?.title||'')));
+        if(next.length!==groups[6].topics.length){
+          groups[6].topics=next;
           if(typeof renderChapters==='function') renderChapters();
         }
       }
-    }catch(err){console.warn('Hoofdstuk 06 kon niet worden opgeschoond:',err)}
+    }catch(err){console.warn('Hoofdstuk 07 kon niet worden opgeschoond:',err)}
 
     const nav=document.querySelector('.nav');
-    if(nav&&!nav.querySelector('a[href="#hoofdstuk-7"]')){
-      const h6=nav.querySelector('a[href="#hoofdstuk-6"]');
-      h6?.insertAdjacentHTML('afterend','<a href="#hoofdstuk-7"><span class="n">07</span><span>Bewijsstukkenregister</span></a>');
+    if(nav&&!nav.querySelector('a[href="#hoofdstuk-8"]')){
+      const h7=nav.querySelector('a[href="#hoofdstuk-7"]');
+      h7?.insertAdjacentHTML('afterend','<a href="#hoofdstuk-8"><span class="n">08</span><span>Bewijsstukkenregister</span></a>');
     }
 
     const overview=document.querySelector('#overzicht .journey');
     const subtitle=document.querySelector('#overzicht .section-header .subtitle');
-    if(subtitle) subtitle.textContent='Zeven hoofdstukken met de bijbehorende onderdelen.';
-    if(overview&&!overview.querySelector('a[href="#hoofdstuk-7"]')){
-      overview.insertAdjacentHTML('beforeend','<article class="journey-card"><div class="num">07</div><h4>Bewijsstukkenregister</h4><p>Alle bewijsstukken overzichtelijk geordend per soort.</p><div class="mini-tags"><span>Bewijsstukken</span><span>Documenten</span></div><a href="#hoofdstuk-7">Bekijk hoofdstuk</a></article>');
+    if(subtitle) subtitle.textContent='Acht hoofdstukken met de bijbehorende onderdelen.';
+    if(overview&&!overview.querySelector('a[href="#hoofdstuk-8"]')){
+      overview.insertAdjacentHTML('beforeend','<article class="journey-card"><div class="num">08</div><h4>Bewijsstukkenregister</h4><p>Alle bewijsstukken overzichtelijk geordend per soort.</p><div class="mini-tags"><span>Bewijsstukken</span><span>Documenten</span></div><a href="#hoofdstuk-8">Bekijk hoofdstuk</a></article>');
     }
-    const chapter6Card=[...document.querySelectorAll('#overzicht .journey-card')].find(card=>card.querySelector('a[href="#hoofdstuk-6"]'));
-    chapter6Card?.querySelectorAll('.mini-tags span').forEach(tag=>{
+    const chapter7Card=[...document.querySelectorAll('#overzicht .journey-card')].find(card=>card.querySelector('a[href="#hoofdstuk-7"]'));
+    chapter7Card?.querySelectorAll('.mini-tags span').forEach(tag=>{
       if(tag.textContent.trim().toLowerCase()==='bewijsstukken') tag.remove();
     });
 
-    if(!document.getElementById('hoofdstuk-7')){
+    if(!document.getElementById('hoofdstuk-8')){
       const footer=document.querySelector('main > footer');
-      footer?.insertAdjacentHTML('beforebegin',`<section class="portfolio-group section evidence-register-section" id="hoofdstuk-7" data-group="7">
+      footer?.insertAdjacentHTML('beforebegin',`<section class="portfolio-group section evidence-register-section" id="hoofdstuk-8" data-group="8">
         <div class="section-header chapter-header evidence-register-header">
-          <div class="section-num">07</div>
+          <div class="section-num">08</div>
           <div class="chapter-heading"><h3>Bewijsstukkenregister</h3><p class="subtitle">Alle bewijsstukken geordend per soort.</p></div>
           <button class="evidence-register-add" type="button" data-file-upload-button>Bestand toevoegen</button>
         </div>
@@ -253,7 +253,7 @@
       const items=groupsMap.get(category)||[];
       return `<article class="topic-card filled evidence-category-card">
         <div class="topic-card-head">
-          <div class="topic-card-title"><span class="topic-index">Onderdeel 07.${index+1}</span><h4>${esc(category)}</h4></div>
+          <div class="topic-card-title"><span class="topic-index">Onderdeel 08.${index+1}</span><h4>${esc(category)}</h4></div>
           <span class="topic-state">${items.length} ${items.length===1?'bewijsstuk':'bewijsstukken'}</span>
         </div>
         <div class="topic-content"><div class="portfolio-file-list">${items.map(item=>`<button type="button" class="portfolio-file-link" data-view-file="${esc(item.category)}" data-file-index="${item._categoryIndex}">${esc(item.title)}</button>`).join('')}</div></div>
@@ -311,7 +311,7 @@
   }
 
   function bindViewButtons(){
-    document.querySelectorAll('#hoofdstuk-7 [data-view-file]').forEach(btn=>{
+    document.querySelectorAll('#hoofdstuk-8 [data-view-file]').forEach(btn=>{
       if(btn.dataset.viewerBound) return;
       btn.dataset.viewerBound='1';
       btn.addEventListener('click',()=>openViewer(btn.dataset.viewFile,Number(btn.dataset.fileIndex)||0));

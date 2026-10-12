@@ -47,7 +47,13 @@
 
   const chapterNumber=section=>String(section?.dataset?.group||'').padStart(2,'0');
   const chapterIndex=section=>Math.max(0,Number(section?.dataset?.group||0)-1);
-  const chapterStorageId=(section,kind)=>`chapter_${kind}_${chapterNumber(section)}`;
+  // Keep the persisted IDs of existing chapters when a chapter is inserted at 05.
+  // Former 05/06/07 became 06/07/08; the new 05 gets its own separate key.
+  const chapterStorageId=(section,kind)=>{
+    const current=Number(section?.dataset?.group||0);
+    const stable=current===5?'observaties':(current>=6&&current<=8?String(current-1).padStart(2,'0'):chapterNumber(section));
+    return `chapter_${kind}_${stable}`;
+  };
   const staticStorageId=(key,kind)=>`section_${kind}_${key}`;
 
   function overviewCard(section){

@@ -74,8 +74,8 @@
         ];
       }
 
-      if(groups[4]){
-        groups[4].topics=[
+      if(groups[5]){
+        groups[5].topics=[
           {title:'Verslaglegging lesdagen',fields:[
             ['s8_evaluatie','Evaluatie','Wat ging goed en wat kon beter?'],
             ['s8_bijstelling','Bijstelling','Wat verander je in een volgende training of periode?']
@@ -136,7 +136,7 @@
       if(tags[0]) tags[0].textContent='Mijn logboek';
     }
 
-    const evaluatieCard=overviewCards[4];
+    const evaluatieCard=[...overviewCards].find(card=>card.querySelector('a[href="#hoofdstuk-6"]'));
     if(evaluatieCard){
       const p=evaluatieCard.querySelector('p');
       if(p) p.textContent='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?';

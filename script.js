@@ -38,7 +38,11 @@ const groups = [
     {title:'Veiligheid en risicoanalyse',fields:[['s11_veiligheid','Veiligheid en risicoanalyse','Welke risico’s zijn relevant en welke maatregelen neem je?']]},
     {title:'Communicatie en begeleiding',fields:[['s12_communicatie','Communicatie en begeleiding','Hoe geef je instructie, feedback en persoonlijke begeleiding?']]}
   ]},
-  {n:'05',title:'Evaluatie & feedback',sub:'Terugkijken, feedback verwerken en bijstellen.',topics:[
+  {n:'05',title:'Observaties & Opdrachten',sub:'Vastleggen van observaties en uitgevoerde opdrachten.',topics:[
+    {title:'Observaties',fields:[['s18_observaties','Observaties','Wat heb je geobserveerd en wat zijn je belangrijkste bevindingen?']]},
+    {title:'Opdrachten',fields:[['s19_opdrachten','Opdrachten','Welke opdracht heb je uitgevoerd en wat heb je ervan geleerd?']]}
+  ]},
+  {n:'06',title:'Evaluatie & feedback',sub:'Terugkijken, feedback verwerken en bijstellen.',topics:[
     {title:'Evaluatie en bijstelling',fields:[
       ['s8_evaluatie','Evaluatie','Wat ging goed en wat kon beter?'],
       ['s8_bijstelling','Bijstelling','Wat verander je in een volgende training of periode?']
@@ -46,7 +50,7 @@ const groups = [
     {title:'Feedback praktijkbegeleider',fields:[['s9_feedback','Feedback','Welke feedback heb je gekregen en wat heb je ermee gedaan?']]},
     {title:'Aansturen van assisterend kader',fields:[['s10_kader','Aansturing','Hoe stuur je assistenten aan, verdeel je taken en bewaak je afspraken?']]}
   ]},
-  {n:'06',title:'Ontwikkeling & reflectie',sub:'Wat heb ik geleerd en wat neem ik mee?',topics:[
+  {n:'07',title:'Ontwikkeling & reflectie',sub:'Wat heb ik geleerd en wat neem ik mee?',topics:[
     {title:'Mijn ontwikkeling als trainer',fields:[['s13_ontwikkeling','Mijn ontwikkeling','Wat heb je geleerd en welke veranderingen zie je in je trainerhandelen?']]},
     {title:'Eindreflectie',fields:[['s14_reflectie','Eindreflectie','Wat neem je mee uit de opleiding en hoe wil je je verder ontwikkelen?']]},
     {title:'Bewijsstukkenregister',fields:[['s15_register','Bewijsstukkenregister','Noteer titel/bestand, datum, onderdeel en een korte toelichting.']]},
