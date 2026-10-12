@@ -296,11 +296,42 @@
     .structure-archive-select{border:1px solid #cbded1;border-radius:9px;background:#fff;padding:8px;max-width:100%;font:inherit;font-size:.76rem}
     .structure-archive-note{margin:0;color:#526459;font-size:.8rem;line-height:1.5}
     .structure-archive-footer{padding:12px 18px;border-top:1px solid #e0e8e1;display:flex;justify-content:flex-end}
+
+    /* Minimal chapter planner: clear hierarchy, generous spacing, no extra controls. */
+    .structure-dialog{background:#f8faf8;border:1px solid #d9e5dc;box-shadow:0 24px 90px rgba(9,40,26,.30)}
+    .structure-head{padding:19px 22px;background:linear-gradient(125deg,#18513e,#286b53)}
+    .structure-body{padding:20px 22px 24px;background:#f8faf8}
+    .structure-hint{padding:12px 15px;border:1px solid #deebe2;background:#fff;border-radius:12px;margin-bottom:12px;font-size:.79rem}
+    .structure-list{gap:14px}
+    .structure-chapter{background:#fff;border:1px solid #dbe7df;border-radius:16px;overflow:visible;box-shadow:0 4px 14px rgba(32,70,49,.045);transition:border-color .15s,box-shadow .15s}
+    .structure-chapter:hover{border-color:#bdd5c4;box-shadow:0 6px 18px rgba(32,70,49,.07)}
+    .structure-chapter-head{gap:12px;padding:13px 15px;background:#f0f6f1;border-radius:15px 15px 0 0;border-bottom:1px solid #e2ebe4}
+    .structure-badge{min-width:32px;height:32px;border-radius:10px;background:#d7ebde;color:#1d6040}
+    .structure-chapter-name{color:#244835;font-size:.9rem}
+    .structure-topic-count{font-size:.7rem;color:#688275;background:#fff;border:1px solid #e0e9e2;border-radius:999px;padding:5px 9px;white-space:nowrap}
+    .structure-handle{flex:0 0 auto;display:grid;place-items:center;width:30px;height:30px;border-radius:9px;font-size:1.15rem;user-select:none}
+    .structure-handle:hover,.structure-handle:focus-visible{background:#e5f1e9;color:#1f5e4a}
+    .structure-handle:active{cursor:grabbing}
+    .structure-topics{gap:7px;padding:12px 14px 14px}
+    .structure-topic{gap:10px;padding:9px 11px;border-color:#e2eae4;border-radius:11px;transition:border-color .15s,background .15s,box-shadow .15s}
+    .structure-topic:hover{background:#fafcfb;border-color:#c5d9cb;box-shadow:0 2px 9px rgba(28,71,46,.04)}
+    .structure-topic-name{color:#344f40}
+    .structure-topic.is-being-dragged,.structure-chapter.is-being-dragged{opacity:.36}
+    .structure-icon{border-color:#dfebe2;color:#688372;font-size:.8rem;padding:6px 9px}
+    .structure-icon:hover,.structure-icon:focus-visible{background:#fff1ef;border-color:#e9cfc9;color:#9b4f42}
+    .structure-add{border-radius:11px;background:#f8fcf9;padding:10px 12px;transition:background .15s,border-color .15s}
+    .structure-add:hover,.structure-add:focus-visible{background:#eaf4ed;border-color:#79aa87;outline:none}
+    .structure-archive-toolbar{margin-bottom:14px}
+    .structure-foot{background:#fff}
+    .structure-drop-indicator{position:absolute;z-index:9;height:4px;border-radius:999px;background:#23a36b;box-shadow:0 0 0 3px rgba(45,151,99,.14);pointer-events:none;display:none}
+    .structure-drop-indicator.visible{display:block}
+    .structure-drop-indicator::before{content:'';position:absolute;left:-5px;top:-4px;width:12px;height:12px;border:3px solid #23a36b;background:#fff;border-radius:50%;box-sizing:border-box}
+    .structure-drop-indicator::after{content:attr(data-label);position:absolute;right:5px;bottom:9px;background:#1c7750;color:#fff;padding:5px 9px;border-radius:8px;font-size:.69rem;font-weight:900;white-space:nowrap;box-shadow:0 3px 12px rgba(27,95,58,.16)}
     @media(max-width:680px){
       .structure-layer{padding:6px}.structure-dialog{height:96dvh;border-radius:13px}
       .structure-body{padding:10px}.structure-chapter-head{padding:9px 7px;gap:4px}
       .structure-topics{padding:7px;gap:7px}.structure-topic{padding:7px 4px;gap:4px;flex-wrap:wrap}
-      .structure-topic-name{flex-basis:calc(100% - 68px)}.structure-move-select{max-width:100%;margin-left:36px;flex:1}
+      .structure-topic-name{flex:1;min-width:140px}.structure-topic-count{font-size:.64rem;padding:4px 6px}
       .structure-icon{padding:6px}.structure-handle{padding:5px}
       .structure-foot{padding:9px;flex-wrap:wrap}.structure-status{flex-basis:100%}
     }
@@ -343,11 +374,11 @@
 
   function editor(initial){
     const draft=validated(initial);
-    let dirty=false,drag=null;
+    let dirty=false,drag=null,dropIntent=null;
     const queuedPurge=new Map();
     const layer=document.createElement('div');
     layer.className='structure-layer';
-    layer.innerHTML='<section class="structure-dialog" role="dialog" aria-modal="true" aria-label="Portfolio-indeling aanpassen"><header class="structure-head"><div><strong>Indeling aanpassen</strong><small>Hoofdstukken en onderdelen van het portfolio</small></div><button class="structure-close" data-close aria-label="Venster sluiten">×</button></header><div class="structure-body"><p class="structure-hint">Sleep aan de handgreep (⠿) om te verplaatsen. Gebruik de pijlen of de keuzelijst als slepen niet handig is. Wijzigingen verschijnen pas na <strong>Opslaan</strong> in het portfolio.</p><div class="structure-archive-toolbar"><button type="button" class="structure-archive-open" data-view-archive>Verwijderde onderdelen <span class="structure-archive-counter" data-archive-count>0</span></button></div><div class="structure-list"></div></div><footer class="structure-foot"><p class="structure-status" role="status">Nog geen wijzigingen.</p><button type="button" class="structure-button secondary" data-cancel>Annuleren</button><button type="button" class="structure-button" data-save disabled>Opslaan</button></footer></section>';
+    layer.innerHTML='<section class="structure-dialog" role="dialog" aria-modal="true" aria-label="Portfolio-indeling aanpassen"><header class="structure-head"><div><strong>Indeling aanpassen</strong><small>Hoofdstukken en onderdelen van het portfolio</small></div><button class="structure-close" data-close aria-label="Venster sluiten">×</button></header><div class="structure-body"><p class="structure-hint">Sleep aan de <strong>greep ⠿</strong> om hoofdstukken en onderdelen te verplaatsen. De groene lijn geeft de exacte plek aan. Klik op <strong>Opslaan</strong> om de indeling door te voeren.</p><div class="structure-archive-toolbar"><button type="button" class="structure-archive-open" data-view-archive>Verwijderde onderdelen <span class="structure-archive-counter" data-archive-count>0</span></button></div><div class="structure-list"></div></div><footer class="structure-foot"><p class="structure-status" role="status">Nog geen wijzigingen.</p><button type="button" class="structure-button secondary" data-cancel>Annuleren</button><button type="button" class="structure-button" data-save disabled>Opslaan</button></footer></section>';
     document.body.appendChild(layer);
     const list=layer.querySelector('.structure-list'),status=layer.querySelector('.structure-status'),save=layer.querySelector('[data-save]');
     const previousOverflow=document.documentElement.style.overflow;
@@ -365,25 +396,20 @@
 
     function cardHtml(key,index){
       const items=draft.topics[key];
-      const opts=draft.order.filter(ch=>ch!==key).map(ch=>'<option value="'+esc(ch)+'">'+esc(titleOf(ch))+'</option>').join('');
-      const inner=items.map((id,j)=>{
+      const inner=items.map(id=>{
         const topic=topicFor(id,draft);
         return '<div class="structure-topic" data-topic="'+esc(id)+'" data-owner="'+esc(key)+'">'+
-          '<span class="structure-handle" draggable="true" data-drag-topic="'+esc(id)+'" role="button" tabindex="0" aria-label="Onderdeel slepen">⠿</span>'+
+          '<span class="structure-handle" draggable="true" data-drag-topic="'+esc(id)+'" role="button" tabindex="0" title="Sleep om te verplaatsen" aria-label="Onderdeel slepen of met pijltjestoetsen verplaatsen">⠿</span>'+
           '<span class="structure-topic-name">'+esc(topic?.title||id)+'</span>'+
-          '<button class="structure-icon" data-up-topic="'+esc(id)+'" title="Omhoog" aria-label="Onderdeel omhoog" '+(j===0?'disabled':'')+'>↑</button>'+
-          '<button class="structure-icon" data-down-topic="'+esc(id)+'" title="Omlaag" aria-label="Onderdeel omlaag" '+(j===items.length-1?'disabled':'')+'>↓</button>'+
-          '<select class="structure-move-select" data-move-topic="'+esc(id)+'" aria-label="Naar ander hoofdstuk verplaatsen"><option value="">Verplaatsen naar…</option>'+opts+'</select>'+
-          '<button class="structure-icon" data-delete-topic="'+esc(id)+'" title="Verwijderen" aria-label="Onderdeel verwijderen">✕</button></div>';
+          '<button class="structure-icon" data-delete-topic="'+esc(id)+'" title="Onderdeel verwijderen" aria-label="Onderdeel verwijderen">✕</button></div>';
       }).join('');
       return '<article class="structure-chapter" data-chapter="'+esc(key)+'">'+
-        '<div class="structure-chapter-head"><span class="structure-handle" draggable="true" data-drag-chapter="'+esc(key)+'" tabindex="0" aria-label="Hoofdstuk slepen">⠿</span>'+
+        '<div class="structure-chapter-head"><span class="structure-handle" draggable="true" data-drag-chapter="'+esc(key)+'" tabindex="0" title="Sleep om te verplaatsen" aria-label="Hoofdstuk slepen of met pijltjestoetsen verplaatsen">⠿</span>'+
         '<span class="structure-badge">'+num(index+1)+'</span><span class="structure-chapter-name">'+esc(titleOf(key))+'</span>'+
-        '<button class="structure-icon" data-up-chapter="'+esc(key)+'" aria-label="Hoofdstuk omhoog" '+(index===0?'disabled':'')+'>↑</button>'+
-        '<button class="structure-icon" data-down-chapter="'+esc(key)+'" aria-label="Hoofdstuk omlaag" '+(index===draft.order.length-1?'disabled':'')+'>↓</button></div>'+
+        '<span class="structure-topic-count">'+items.length+' '+(items.length===1?'onderdeel':'onderdelen')+'</span></div>'+
         '<div class="structure-topics">'+(inner||'<span class="structure-empty">Geen onderdelen</span>')+
         '<button class="structure-add" data-add-topic="'+esc(key)+'">+ Onderdeel toevoegen</button>'+
-        (key==='evidence'?'<span class="structure-empty">Bewijsstukcategorieën worden automatisch uit geüploade bestanden opgebouwd en blijven behouden.</span>':'')+
+        (key==='evidence'?'<span class="structure-empty">Bewijsstukcategorieën uit bestanden worden automatisch opgebouwd.</span>':'')+
         '</div></article>';
     }
     function render(){
@@ -457,25 +483,33 @@
     }
     layer.querySelector('[data-view-archive]').addEventListener('click',showArchive);
     function findOwner(id){return keys.find(key=>draft.topics[key].includes(id));}
-    function shiftChapter(id,direction){const from=draft.order.indexOf(id),to=from+direction;if(from<0||to<0||to>=draft.order.length)return;draft.order.splice(from,1);draft.order.splice(to,0,id);mark();render();}
-    function placeChapter(id,onto,before){const from=draft.order.indexOf(id);if(from<0||!draft.order.includes(onto)||id===onto)return;draft.order.splice(from,1);let at=draft.order.indexOf(onto)+(before?0:1);draft.order.splice(at,0,id);mark();render();}
-    function moveTopic(id,target,beforeId,after=false){
-      const owner=findOwner(id);if(!owner||!draft.topics[target])return;
-      const source=draft.topics[owner];source.splice(source.indexOf(id),1);
-      const to=draft.topics[target];
-      const targetIndex=beforeId?to.indexOf(beforeId):-1;
-      to.splice(targetIndex<0?to.length:targetIndex+(after?1:0),0,id);
+
+    // Shared insertion-index logic for drag/drop and accessible keyboard movement.
+    function placeChapterAt(id,boundary){
+      const from=draft.order.indexOf(id);
+      if(from<0)return false;
+      const at=boundary-(from<boundary?1:0);
+      if(at===from)return false;
+      draft.order.splice(from,1);
+      draft.order.splice(at,0,id);
       mark();render();
+      return true;
+    }
+    function placeTopicAt(id,target,boundary){
+      const owner=findOwner(id);
+      if(!owner||!draft.topics[target])return false;
+      const source=draft.topics[owner],from=source.indexOf(id);
+      if(from<0)return false;
+      const at=target===owner&&from<boundary?boundary-1:boundary;
+      if(target===owner&&at===from)return false;
+      source.splice(from,1);
+      draft.topics[target].splice(at,0,id);
+      mark();render();
+      return true;
     }
     list.addEventListener('click',async event=>{
       const button=event.target.closest('button');if(!button||button.disabled)return;
       const field=Object.keys(button.dataset)[0],id=button.dataset[field];
-      if(field==='upChapter')shiftChapter(id,-1);
-      if(field==='downChapter')shiftChapter(id,1);
-      if(field==='upTopic'||field==='downTopic'){
-        const owner=findOwner(id),arr=draft.topics[owner],old=arr.indexOf(id),next=old+(field==='upTopic'?-1:1);
-        if(next>=0&&next<arr.length){arr.splice(old,1);arr.splice(next,0,id);mark();render();}
-      }
       if(field==='addTopic'){
         const title=await ask(layer,{title:'Onderdeel toevoegen',text:'Geef het nieuwe onderdeel een naam.',input:true});
         if(!title)return;
@@ -494,46 +528,135 @@
         }
       }
     });
-    list.addEventListener('change',event=>{
-      const select=event.target.closest('[data-move-topic]');if(!select||!select.value)return;
-      moveTopic(select.dataset.moveTopic,select.value);
-    });
+
+    // An absolute marker avoids layout jumps as the drag target changes.
+    const indicator=document.createElement('div');
+    indicator.className='structure-drop-indicator';
+    indicator.setAttribute('aria-hidden','true');
+    layer.appendChild(indicator);
+    function clearDrag(){
+      drag=null;
+      dropIntent=null;
+      indicator.classList.remove('visible');
+      list.querySelectorAll('.is-being-dragged').forEach(node=>node.classList.remove('is-being-dragged'));
+    }
+    function showLine(y,rect,kind){
+      const parent=layer.getBoundingClientRect();
+      indicator.style.top=(y-parent.top-2)+'px';
+      indicator.style.left=(rect.left-parent.left+(kind==='topic'?16:7))+'px';
+      indicator.style.width=Math.max(90,rect.width-(kind==='topic'?32:14))+'px';
+      indicator.dataset.label=kind==='topic'?'Onderdeel hier invoegen':'Hoofdstuk hier plaatsen';
+      indicator.classList.add('visible');
+    }
+    function locateChapter(event){
+      const hovered=event.target.closest?.('.structure-chapter');
+      if(hovered&&list.contains(hovered))return hovered;
+      const cards=[...list.querySelectorAll(':scope > .structure-chapter')];
+      if(!cards.length)return null;
+      const distance=rect=>event.clientY<rect.top?rect.top-event.clientY:Math.max(0,event.clientY-rect.bottom);
+      return cards.reduce((best,card)=>distance(card.getBoundingClientRect())<distance(best.getBoundingClientRect())?card:best,cards[0]);
+    }
+    function updateDrop(event){
+      if(!drag)return false;
+      const chapter=locateChapter(event);
+      if(!chapter)return false;
+      const key=chapter.dataset.chapter;
+      if(drag.kind==='chapter'){
+        const rect=chapter.getBoundingClientRect();
+        const after=event.clientY>rect.top+rect.height/2;
+        const boundary=draft.order.indexOf(key)+(after?1:0);
+        const from=draft.order.indexOf(drag.id);
+        if(from<0||from===boundary||from+1===boundary){
+          dropIntent=null;indicator.classList.remove('visible');
+          return true;
+        }
+        dropIntent={kind:'chapter',id:drag.id,boundary};
+        showLine(after?rect.bottom:rect.top,rect,'chapter');
+        return true;
+      }
+
+      const topics=chapter.querySelector('.structure-topics');
+      if(!topics)return false;
+      const rows=[...topics.querySelectorAll(':scope > .structure-topic')];
+      const hovered=event.target.closest?.('.structure-topic');
+      const row=hovered&&rows.includes(hovered)?hovered:null;
+      let boundary=0,y=topics.getBoundingClientRect().top;
+      if(row){
+        const rect=row.getBoundingClientRect();
+        const after=event.clientY>rect.top+rect.height/2;
+        boundary=rows.indexOf(row)+(after?1:0);
+        y=after?rect.bottom:rect.top;
+      }else if(rows.length){
+        // Header, blank areas and gaps pick the nearest visible insertion slot.
+        const slots=rows.map((item,i)=>({index:i,y:item.getBoundingClientRect().top}));
+        slots.push({index:rows.length,y:rows.at(-1).getBoundingClientRect().bottom});
+        const slot=slots.reduce((best,option)=>Math.abs(event.clientY-option.y)<Math.abs(event.clientY-best.y)?option:best);
+        boundary=slot.index;
+        y=slot.y;
+      }else{
+        y=topics.querySelector('.structure-add')?.getBoundingClientRect().top||topics.getBoundingClientRect().top;
+      }
+      const owner=findOwner(drag.id);
+      const from=draft.topics[owner]?.indexOf(drag.id)??-1;
+      if(!owner||from<0||(owner===key&&(from===boundary||from+1===boundary))){
+        dropIntent=null;indicator.classList.remove('visible');
+        return true;
+      }
+      dropIntent={kind:'topic',id:drag.id,chapter:key,boundary};
+      showLine(y,topics.getBoundingClientRect(),'topic');
+      return true;
+    }
     list.addEventListener('dragstart',event=>{
-      const topic=event.target.closest('[data-drag-topic]'),chapter=event.target.closest('[data-drag-chapter]');
+      const topic=event.target.closest('[data-drag-topic]');
+      const chapter=event.target.closest('[data-drag-chapter]');
       if(topic)drag={kind:'topic',id:topic.dataset.dragTopic};
       else if(chapter)drag={kind:'chapter',id:chapter.dataset.dragChapter};
       else return;
       event.dataTransfer.effectAllowed='move';
       event.dataTransfer.setData('text/plain',drag.kind+':'+drag.id);
+      const source=event.target.closest(drag.kind==='topic'?'.structure-topic':'.structure-chapter');
+      // Delay fading the original until Safari captures its drag preview.
+      setTimeout(()=>{if(drag)source?.classList.add('is-being-dragged');},0);
     });
     list.addEventListener('dragover',event=>{
       if(!drag)return;
-      const target=event.target.closest('.structure-chapter');
-      if(!target)return;
-      if(drag.kind==='chapter'&&target.dataset.chapter===drag.id)return;
-      event.preventDefault();event.dataTransfer.dropEffect='move';
-      list.querySelectorAll('.is-drop,.is-drop-before,.is-drop-after').forEach(el=>el.classList.remove('is-drop','is-drop-before','is-drop-after'));
-      if(drag.kind==='chapter')target.classList.add('is-drop');
-      else{
-        const row=event.target.closest('.structure-topic');
-        if(row&&row.dataset.topic!==drag.id)row.classList.add(event.clientY<row.getBoundingClientRect().top+row.offsetHeight/2?'is-drop-before':'is-drop-after');
-        else target.classList.add('is-drop');
+      if(updateDrop(event)){
+        event.preventDefault();
+        event.dataTransfer.dropEffect=dropIntent?'move':'none';
       }
     });
     list.addEventListener('drop',event=>{
       if(!drag)return;
-      const target=event.target.closest('.structure-chapter');if(!target)return;
       event.preventDefault();
-      if(drag.kind==='chapter')placeChapter(drag.id,target.dataset.chapter,event.clientY<target.getBoundingClientRect().top+target.offsetHeight/2);
-      else{
-        const row=event.target.closest('.structure-topic');
-        if(row&&row.dataset.topic!==drag.id)moveTopic(drag.id,target.dataset.chapter,row.dataset.topic,event.clientY>=row.getBoundingClientRect().top+row.offsetHeight/2);
-        else if(!row)moveTopic(drag.id,target.dataset.chapter);
-      }
-      drag=null;
-      list.querySelectorAll('.is-drop,.is-drop-before,.is-drop-after').forEach(el=>el.classList.remove('is-drop','is-drop-before','is-drop-after'));
+      updateDrop(event);
+      const destination=dropIntent;
+      clearDrag();
+      if(!destination)return;
+      if(destination.kind==='chapter')placeChapterAt(destination.id,destination.boundary);
+      else placeTopicAt(destination.id,destination.chapter,destination.boundary);
     });
-    list.addEventListener('dragend',()=>{drag=null;list.querySelectorAll('.is-drop,.is-drop-before,.is-drop-after').forEach(el=>el.classList.remove('is-drop','is-drop-before','is-drop-after'));});
+    list.addEventListener('dragend',clearDrag);
+    // Focused drag handles support Up/Down keys without visible arrows.
+    list.addEventListener('keydown',event=>{
+      if(event.key!=='ArrowUp'&&event.key!=='ArrowDown')return;
+      const handle=event.target.closest?.('[data-drag-topic],[data-drag-chapter]');
+      if(!handle)return;
+      event.preventDefault();
+      const step=event.key==='ArrowUp'?-1:1;
+      const chapter=handle.dataset.dragChapter;
+      const topic=handle.dataset.dragTopic;
+      if(chapter){
+        const from=draft.order.indexOf(chapter),to=from+step;
+        if(to<0||to>=draft.order.length)return;
+        if(placeChapterAt(chapter,step===-1?to:to+1))
+          list.querySelector('[data-drag-chapter="'+chapter+'"]')?.focus();
+      }else if(topic){
+        const owner=findOwner(topic),from=draft.topics[owner]?.indexOf(topic)??-1,to=from+step;
+        if(to<0||to>=draft.topics[owner].length)return;
+        if(placeTopicAt(topic,owner,step===-1?to:to+1))
+          list.querySelector('[data-drag-topic="'+topic+'"]')?.focus();
+      }
+    });
     layer.querySelector('[data-save]').addEventListener('click',async()=>{
       if(!dirty)return;
       save.disabled=true;status.textContent='Indeling online opslaan…';
