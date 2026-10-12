@@ -102,14 +102,14 @@
       if(el && el.textContent!==text) el.textContent=text;
     };
 
-    setText('.nav a[href="#hoofdstuk-2"] span:last-child','Doelgroep');
-    setText('#hoofdstuk-1 .chapter-heading .subtitle','Wie ben ik als wandelcoach en wat wil ik ontwikkelen?');
-    setText('#hoofdstuk-2 .chapter-heading h3','Doelgroep');
-    setText('#hoofdstuk-2 .chapter-heading .subtitle','Voor wie geef ik training en wat is de beginsituatie?');
-    setText('#hoofdstuk-3 .chapter-heading .subtitle','Mijn lesdagen bijhouden en concrete trainingsvoorbereiding.');
+    setText('.nav a[data-chapter-key="ch2"] span:last-child','Doelgroep');
+    setText('.portfolio-group[data-chapter-key="ch1"] .chapter-heading .subtitle','Wie ben ik als wandelcoach en wat wil ik ontwikkelen?');
+    setText('.portfolio-group[data-chapter-key="ch2"] .chapter-heading h3','Doelgroep');
+    setText('.portfolio-group[data-chapter-key="ch2"] .chapter-heading .subtitle','Voor wie geef ik training en wat is de beginsituatie?');
+    setText('.portfolio-group[data-chapter-key="ch3"] .chapter-heading .subtitle','Mijn lesdagen bijhouden en concrete trainingsvoorbereiding.');
 
     const overviewCards=document.querySelectorAll('#overzicht .journey-card');
-    const profileCard=overviewCards[0];
+    const profileCard=[...overviewCards].find(card=>card.dataset.chapterKey==='ch1');
     if(profileCard){
       const p=profileCard.querySelector('p');
       if(p) p.textContent='Wie ben ik als wandelcoach, waar sta ik nu en welke leerdoelen horen bij mijn profiel?';
@@ -118,7 +118,7 @@
       if(tags[1]) tags[1].textContent='Persoonlijke leerdoelen';
     }
 
-    const doelgroepCard=overviewCards[1];
+    const doelgroepCard=[...overviewCards].find(card=>card.dataset.chapterKey==='ch2');
     if(doelgroepCard){
       doelgroepCard.querySelector('h4')?.replaceChildren(document.createTextNode('Doelgroep'));
       const p=doelgroepCard.querySelector('p');
@@ -128,7 +128,7 @@
       if(tags[1]) tags[1].remove();
     }
 
-    const planningCard=overviewCards[2];
+    const planningCard=[...overviewCards].find(card=>card.dataset.chapterKey==='ch3');
     if(planningCard){
       const p=planningCard.querySelector('p');
       if(p) p.textContent='Hoe houd ik mijn lesdagen bij en hoe vertaal ik die naar concrete trainingen?';
@@ -136,7 +136,7 @@
       if(tags[0]) tags[0].textContent='Mijn logboek';
     }
 
-    const evaluatieCard=[...overviewCards].find(card=>card.querySelector('a[href="#hoofdstuk-6"]'));
+    const evaluatieCard=[...overviewCards].find(card=>card.dataset.chapterKey==='ch6');
     if(evaluatieCard){
       const p=evaluatieCard.querySelector('p');
       if(p) p.textContent='Hoe leg ik mijn lesdagen vast, verwerk ik feedback en stuur ik mijn handelen bij?';

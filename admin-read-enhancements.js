@@ -321,7 +321,7 @@
       <section class="editor-window chapter5-standard-window" role="dialog" aria-modal="false" aria-label="${esc(cfg.title)}">
         <header class="window-bar">
           <div class="window-title-wrap">
-            <span class="window-kicker">Hoofdstuk 05 · onderdeel ${cfg.part}</span>
+            <span class="window-kicker">${(()=>{let ref="";if(typeof groups!=="undefined")groups.some((group,index)=>group.topics.some((topic,part)=>{if(topic.fields?.[0]?.[0]!==cfg.fieldId)return false;ref="Hoofdstuk "+String(index+1).padStart(2,"0")+" · onderdeel "+(part+1);return true;}));return ref||"Portfolio-onderdeel";})()}</span>
             <strong>${esc(cfg.title)}</strong>
           </div>
           <div class="window-controls">
@@ -411,8 +411,13 @@
 
   function renderCards(){
     Object.entries(config).forEach(([category,cfg])=>{
-      const cardKey=category==='feedback'?'4-2':'4-3';
-      const card=document.querySelector(`[data-topic-card="${cardKey}"]`);
+      let cardKey='';
+      if(typeof groups!=='undefined')groups.some((group,groupIndex)=>group.topics.some((topic,topicIndex)=>{
+        if(topic.fields?.[0]?.[0]!==cfg.fieldId)return false;
+        cardKey=groupIndex+'-'+topicIndex;
+        return true;
+      }));
+      const card=cardKey?document.querySelector(`[data-topic-card="${cardKey}"]`):null;
       const content=card?.querySelector('.topic-content');
       if(!card||!content) return;
       const list=currentEntries(category);
@@ -432,7 +437,7 @@
     openStandardEditor(category);
   },true);
 
-  const topics=document.getElementById('topics-5');
+  const topics=document.querySelector('main');
   if(topics){
     let queued=false;
     new MutationObserver(()=>{
@@ -444,5 +449,6 @@
       });
     }).observe(topics,{childList:true,subtree:true});
   }
+  document.addEventListener('portfolio:structure-changed',()=>requestAnimationFrame(renderCards));
   setTimeout(renderCards,0);
 })();

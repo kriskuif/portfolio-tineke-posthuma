@@ -80,8 +80,21 @@
     if(!match) return '';
     const groupIndex=Number(match[1]);
     const topicIndex=Number(match[2]);
-    const chapter=(typeof groups!=='undefined'&&groups[groupIndex]?.n)||String(groupIndex+1).padStart(2,'0');
-    return `topic_layout_${chapter}_${String(topicIndex+1).padStart(2,'0')}`;
+    const topic=typeof groups!=='undefined'?groups[groupIndex]?.topics?.[topicIndex]:null;
+    const field=String(topic?.fields?.[0]?.[0]||'');
+    return field?'topic_layout_field_'+field:'';
+  }
+
+  function legacyForField(id){
+    const old={
+      s1_intro:'01_01',s3_groep:'02_01',s5_planning:'03_01',s6_voorbereiding:'03_02',
+      s7_uitvoering:'04_01',s11_veiligheid:'04_02',s12_communicatie:'04_03',
+      s18_observaties:'05_01',s19_opdrachten:'05_02',
+      s8_evaluatie:'06_01',s10_kader:'06_02',s9_feedback:'06_03',s17_lesvoorbereidingen:'06_04',
+      s13_ontwikkeling:'07_01',s14_reflectie:'07_02'
+    };
+    const field=id.replace(/^topic_layout_field_/,'');
+    return old[field]?'topic_layout_'+old[field]:'';
   }
 
   function cardsInList(list){
@@ -97,7 +110,7 @@
 
     cards.forEach(card=>{
       const id=layoutId(card);
-      const choice=layouts.get(id)||'auto';
+      const choice=layouts.get(id)||layouts.get(legacyForField(id))||'auto';
       card.dataset.layoutChoice=choice;
 
       if(choice==='full'){

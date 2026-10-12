@@ -128,35 +128,36 @@
 
   function ensurePortfolioStructure(){
     try{
-      if(typeof groups!=='undefined'&&groups[6]){
-        const next=groups[6].topics.filter(topic=>!['Bewijsstukkenregister','Bijlagen'].includes(String(topic?.title||'')));
-        if(next.length!==groups[6].topics.length){
-          groups[6].topics=next;
+      const reflection=typeof groups!=='undefined'?groups.find(group=>group.chapterKey==='ch7'||group.topics?.some(topic=>topic.fields?.[0]?.[0]==='s13_ontwikkeling')):null;
+      if(reflection){
+        const next=reflection.topics.filter(topic=>!['Bewijsstukkenregister','Bijlagen'].includes(String(topic?.title||'')));
+        if(next.length!==reflection.topics.length){
+          reflection.topics=next;
           if(typeof renderChapters==='function') renderChapters();
         }
       }
     }catch(err){console.warn('Hoofdstuk 07 kon niet worden opgeschoond:',err)}
 
     const nav=document.querySelector('.nav');
-    if(nav&&!nav.querySelector('a[href="#hoofdstuk-8"]')){
-      const h7=nav.querySelector('a[href="#hoofdstuk-7"]');
-      h7?.insertAdjacentHTML('afterend','<a href="#hoofdstuk-8"><span class="n">08</span><span>Bewijsstukkenregister</span></a>');
+    if(nav&&!nav.querySelector('a[data-chapter-key="evidence"]')){
+      const h7=nav.querySelector('a[data-chapter-key="ch7"]');
+      h7?.insertAdjacentHTML('afterend','<a href="#hoofdstuk-8" data-chapter-key="evidence"><span class="n">08</span><span>Bewijsstukkenregister</span></a>');
     }
 
     const overview=document.querySelector('#overzicht .journey');
     const subtitle=document.querySelector('#overzicht .section-header .subtitle');
     if(subtitle) subtitle.textContent='Acht hoofdstukken met de bijbehorende onderdelen.';
-    if(overview&&!overview.querySelector('a[href="#hoofdstuk-8"]')){
-      overview.insertAdjacentHTML('beforeend','<article class="journey-card"><div class="num">08</div><h4>Bewijsstukkenregister</h4><p>Alle bewijsstukken overzichtelijk geordend per soort.</p><div class="mini-tags"><span>Bewijsstukken</span><span>Documenten</span></div><a href="#hoofdstuk-8">Bekijk hoofdstuk</a></article>');
+    if(overview&&!overview.querySelector('.journey-card[data-chapter-key="evidence"]')){
+      overview.insertAdjacentHTML('beforeend','<article class="journey-card" data-chapter-key="evidence"><div class="num">08</div><h4>Bewijsstukkenregister</h4><p>Alle bewijsstukken overzichtelijk geordend per soort.</p><div class="mini-tags"><span>Bewijsstukken</span><span>Documenten</span></div><a href="#hoofdstuk-8">Bekijk hoofdstuk</a></article>');
     }
-    const chapter7Card=[...document.querySelectorAll('#overzicht .journey-card')].find(card=>card.querySelector('a[href="#hoofdstuk-7"]'));
+    const chapter7Card=document.querySelector('#overzicht .journey-card[data-chapter-key="ch7"]');
     chapter7Card?.querySelectorAll('.mini-tags span').forEach(tag=>{
       if(tag.textContent.trim().toLowerCase()==='bewijsstukken') tag.remove();
     });
 
-    if(!document.getElementById('hoofdstuk-8')){
+    if(!document.querySelector('.portfolio-group[data-chapter-key="evidence"]')){
       const footer=document.querySelector('main > footer');
-      footer?.insertAdjacentHTML('beforebegin',`<section class="portfolio-group section evidence-register-section" id="hoofdstuk-8" data-group="8">
+      footer?.insertAdjacentHTML('beforebegin',`<section class="portfolio-group section evidence-register-section" id="hoofdstuk-8" data-group="8" data-chapter-key="evidence">
         <div class="section-header chapter-header evidence-register-header">
           <div class="section-num">08</div>
           <div class="chapter-heading"><h3>Bewijsstukkenregister</h3><p class="subtitle">Alle bewijsstukken geordend per soort.</p></div>
@@ -231,6 +232,7 @@
       saveLocalCategories(customCategories);
       ensurePortfolioStructure();
       renderRegister();
+      document.dispatchEvent(new Event('portfolio:files-loaded'));
     }catch(err){console.error('Bestandsregister laden mislukt:',err)}
     finally{loading=false}
   }
@@ -245,6 +247,8 @@
       groupsMap.get(name).push(item);
     });
     const categories=[...groupsMap.keys()].filter(name=>groupsMap.get(name)?.length).sort(compareCategories);
+    const chapterNumber=String(document.querySelector('.evidence-register-section')?.dataset.group||8).padStart(2,'0');
+    const customTopicCount=(typeof groups!=='undefined'?groups.find(group=>group.chapterKey==='evidence')?.topics?.length:0)||0;
     if(!categories.length){
       target.innerHTML='<p class="evidence-register-empty">Nog geen bewijsstukken toegevoegd.</p>';
       return;
@@ -253,7 +257,7 @@
       const items=groupsMap.get(category)||[];
       return `<article class="topic-card filled evidence-category-card">
         <div class="topic-card-head">
-          <div class="topic-card-title"><span class="topic-index">Onderdeel 08.${index+1}</span><h4>${esc(category)}</h4></div>
+          <div class="topic-card-title"><span class="topic-index">Onderdeel ${chapterNumber}.${index+1+customTopicCount}</span><h4>${esc(category)}</h4></div>
           <span class="topic-state">${items.length} ${items.length===1?'bewijsstuk':'bewijsstukken'}</span>
         </div>
         <div class="topic-content"><div class="portfolio-file-list">${items.map(item=>`<button type="button" class="portfolio-file-link" data-view-file="${esc(item.category)}" data-file-index="${item._categoryIndex}">${esc(item.title)}</button>`).join('')}</div></div>

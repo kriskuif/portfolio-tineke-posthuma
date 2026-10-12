@@ -490,15 +490,42 @@ document.getElementById('importFile')?.addEventListener('change',async event=>{
   event.target.value='';
 });
 
-const navLinks=[...document.querySelectorAll('.nav a')];
-const observed=[...document.querySelectorAll('main section[id]')];
-const observer=new IntersectionObserver(entries=>{
-  const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
-  if(!visible) return;
-  const href=`#${visible.target.id}`;
-  navLinks.forEach(link=>link.classList.toggle('active',link.getAttribute('href')===href));
-},{rootMargin:'-15% 0px -65% 0px',threshold:[0,.1,.35]});
-observed.forEach(section=>observer.observe(section));
+// Recalculate active navigation from document order so dynamically added chapters
+// (including the evidence register) and drag-reordered chapters are included.
+let navigationFrame=0;
+function updateActiveNavigation(){
+  navigationFrame=0;
+  const sections=[...document.querySelectorAll('main > section[id], main > .admin-notes-row > section[id], main > .admin-notes-row > .hero[id]')];
+  if(!sections.length)return;
+  const threshold=Math.max(105,window.innerHeight*.27);
+  let active=sections[0];
+  for(const section of sections){
+    if(section.getBoundingClientRect().top<=threshold)active=section;
+    else break;
+  }
+  // Near the bottom, select the final chapter even if it never crosses
+  // the usual active-section threshold in the viewport.
+  const atBottom=window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-12;
+  if(atBottom)active=sections.at(-1);
+  const href='#'+active.id;
+  document.querySelectorAll('.nav a[href^="#"]').forEach(link=>{
+    const selected=link.getAttribute('href')===href;
+    link.classList.toggle('active',selected);
+    if(selected)link.setAttribute('aria-current','location');
+    else link.removeAttribute('aria-current');
+  });
+}
+function scheduleActiveNavigation(){
+  if(navigationFrame)return;
+  navigationFrame=requestAnimationFrame(updateActiveNavigation);
+}
+window.addEventListener('scroll',scheduleActiveNavigation,{passive:true});
+window.addEventListener('resize',scheduleActiveNavigation,{passive:true});
+window.addEventListener('hashchange',scheduleActiveNavigation);
+document.addEventListener('portfolio:structure-changed',scheduleActiveNavigation);
+document.addEventListener('portfolio:files-loaded',scheduleActiveNavigation);
+document.querySelector('.nav')?.addEventListener('click',()=>setTimeout(scheduleActiveNavigation,100));
+scheduleActiveNavigation();
 
 loadState();
 renderChapters();

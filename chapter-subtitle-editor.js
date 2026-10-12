@@ -50,9 +50,9 @@
   // Keep the persisted IDs of existing chapters when a chapter is inserted at 05.
   // Former 05/06/07 became 06/07/08; the new 05 gets its own separate key.
   const chapterStorageId=(section,kind)=>{
-    const current=Number(section?.dataset?.group||0);
-    const stable=current===5?'observaties':(current>=6&&current<=8?String(current-1).padStart(2,'0'):chapterNumber(section));
-    return `chapter_${kind}_${stable}`;
+    const key=section?.dataset?.chapterKey||'';
+    const original={'ch1':'01','ch2':'02','ch3':'03','ch4':'04','ch5':'observaties','ch6':'05','ch7':'06','evidence':'07'};
+    return `chapter_${kind}_${original[key]||chapterNumber(section)}`;
   };
   const staticStorageId=(key,kind)=>`section_${kind}_${key}`;
 
