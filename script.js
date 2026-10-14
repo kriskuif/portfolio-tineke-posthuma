@@ -18,8 +18,7 @@ const groups = [
   {n:'02',title:'Doelgroep & doelen',sub:'Voor wie geef ik training en waar werken we naartoe?',topics:[
     {title:'Beginsituatie en doelgroep',fields:[
       ['s3_groep','Groepsprofiel','Beschrijf leeftijd, omvang, wandelervaring, niveau en motivatie.'],
-      ['s3_begin','Beginsituatie','Wat kunnen de deelnemers nu? Waar liggen kansen en aandachtspunten?'],
-      ['s3_behoeften','Behoeften','Wat willen de deelnemers bereiken en wat hebben zij van jou nodig?']
+      ['s3_begin','Beginsituatie','Wat kunnen de deelnemers nu? Waar liggen kansen en aandachtspunten?']
     ]},
     {title:'Trainingsdoelen',fields:[
       ['s4_doelen','Trainingsdoelen','Welke concrete doelen wil je met de groep bereiken?'],
