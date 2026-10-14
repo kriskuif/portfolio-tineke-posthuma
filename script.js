@@ -43,8 +43,7 @@ const groups = [
   ]},
   {n:'06',title:'Evaluatie & feedback',sub:'Terugkijken, feedback verwerken en bijstellen.',topics:[
     {title:'Evaluatie en bijstelling',fields:[
-      ['s8_evaluatie','Evaluatie','Wat ging goed en wat kon beter?'],
-      ['s8_bijstelling','Bijstelling','Wat verander je in een volgende training of periode?']
+      ['s8_evaluatie','Evaluatie','Wat ging goed en wat kon beter?']
     ]},
     {title:'Feedback praktijkbegeleider',fields:[['s9_feedback','Feedback','Welke feedback heb je gekregen en wat heb je ermee gedaan?']]},
     {title:'Aansturen van assisterend kader',fields:[['s10_kader','Aansturing','Hoe stuur je assistenten aan, verdeel je taken en bewaak je afspraken?']]}
