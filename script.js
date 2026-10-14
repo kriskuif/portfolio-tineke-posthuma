@@ -58,6 +58,10 @@ const groups = [
 
 const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+// Uitgefaseerde invoervelden verschijnen niet opnieuw via opgeslagen oude indelingen.
+const removedInputFieldIds = new Set(['s3_behoeften','s8_bijstelling']);
+const visibleTopicFields = topic => (topic?.fields || []).filter(([id]) => !removedInputFieldIds.has(id));
+
 let state = {version:2, updatedAt:null, values:{}};
 const openWindows = new Map();
 let topZ = 1100;
@@ -116,7 +120,7 @@ function persistState(message='Onderdeel opgeslagen'){
 }
 
 function topicValues(topic){
-  return topic.fields.map(([id,label])=>({id,label,value:String(state.values[id]||'').trim()}));
+  return visibleTopicFields(topic).map(([id,label])=>({id,label,value:String(state.values[id]||'').trim()}));
 }
 
 function isTopicFilled(topic){
@@ -223,7 +227,7 @@ function clampWindowPosition(el,left,top){
 
 function windowHasUnsavedChanges(win){
   if(!win.dirty) return false;
-  return win.topic.fields.some(([id])=>{
+  return visibleTopicFields(win.topic).some(([id])=>{
     const field=win.el.querySelector(`[data-modal-field="${id}"]`);
     return (field?.value||'') !== (state.values[id]||'');
   });
@@ -243,7 +247,7 @@ function setWindowDirty(win,dirty=true){
 }
 
 function windowMarkup(group,topic,groupIndex,topicIndex,key){
-  const fields=topic.fields.map(([id,label,help])=>`<div class="modal-field"><label for="modal-${key}-${esc(id)}">${esc(label)}<small>${esc(help)}</small></label><textarea id="modal-${key}-${esc(id)}" data-modal-field="${esc(id)}"></textarea></div>`).join('');
+  const fields=visibleTopicFields(topic).map(([id,label,help])=>`<div class="modal-field"><label for="modal-${key}-${esc(id)}">${esc(label)}<small>${esc(help)}</small></label><textarea id="modal-${key}-${esc(id)}" data-modal-field="${esc(id)}"></textarea></div>`).join('');
   return `<section class="editor-window" data-editor-window="${key}" role="dialog" aria-modal="false" aria-labelledby="window-title-${key}">
     <header class="window-bar" data-window-drag-handle>
       <div class="window-title-wrap">
@@ -361,7 +365,7 @@ function closeWindow(win,force=false){
 
 function saveWindow(win){
   if(!win||!openWindows.has(win.key)) return;
-  win.topic.fields.forEach(([id])=>{
+  visibleTopicFields(win.topic).forEach(([id])=>{
     const field=win.el.querySelector(`[data-modal-field="${id}"]`);
     state.values[id]=field?.value||'';
   });
@@ -476,7 +480,7 @@ document.getElementById('importFile')?.addEventListener('change',async event=>{
       renderChapters();
       openWindows.forEach(win=>{
         if(windowHasUnsavedChanges(win)) return;
-        win.topic.fields.forEach(([id])=>{
+        visibleTopicFields(win.topic).forEach(([id])=>{
           const field=win.el.querySelector(`[data-modal-field="${id}"]`);
           if(field) field.value=state.values[id]||'';
         });
