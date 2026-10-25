@@ -60,10 +60,46 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 
 // Uitgefaseerde invoervelden verschijnen niet opnieuw via opgeslagen oude indelingen.
 const removedInputFieldIds = new Set(['s3_behoeften','s8_bijstelling']);
-const visibleTopicFields = topic => (topic?.fields || []).filter(([id]) => !removedInputFieldIds.has(id));
-// The field ID is stable even when a topic is moved or its chapter is reordered.
+const baseTopicFields = topic => (topic?.fields || []).filter(([id]) => !removedInputFieldIds.has(id));
+const extraFieldId = /^extra_[a-z0-9]{12,48}$/i;
+// A topic's first original content ID (or custom topic's ID) never changes when reordered.
+const topicFieldLayoutKey = topic => 'topic_field_layout_v1_' + (topic?.portfolioKey || topic?.fields?.[0]?.[0] || '');
 const fieldHeadingKey = id => 'field_heading_' + id;
 const fieldHeading = (id,original) => String(state.values[fieldHeadingKey(id)] || '').trim() || original;
+
+function fieldsFromLayout(topic,stored){
+  const defaults=baseTopicFields(topic);
+  if(!stored) return defaults.map(field=>field.slice());
+  try{
+    const saved=JSON.parse(stored);
+    if(saved?.version!==1||!Array.isArray(saved.fields)||saved.fields.length>40) return defaults.map(field=>field.slice());
+    const originals=new Map(defaults.map(field=>[field[0],field]));
+    const seen=new Set();
+    const fields=[];
+    for(const record of saved.fields){
+      const id=String(record?.id||'');
+      if(seen.has(id)) continue;
+      if(originals.has(id)) fields.push(originals.get(id).slice());
+      else if(extraFieldId.test(id)){
+        const label=String(record.label||'Nieuw kopje').trim().slice(0,120)||'Nieuw kopje';
+        fields.push([id,label,'']);
+      }else continue;
+      seen.add(id);
+    }
+    return fields;
+  }catch(_err){return defaults.map(field=>field.slice());}
+}
+const visibleTopicFields = topic => fieldsFromLayout(topic,state.values[topicFieldLayoutKey(topic)]);
+function serializeFieldLayout(fields){
+  return JSON.stringify({version:1,fields:fields.map(([id,label])=>
+    extraFieldId.test(id)?{id,label}:{id}
+  )});
+}
+function newFieldId(){
+  const random=globalThis.crypto?.randomUUID?.().replace(/-/g,'') ||
+    (Date.now().toString(36)+Math.random().toString(36).slice(2));
+  return 'extra_'+random;
+}
 
 let state = {version:2, updatedAt:null, values:{}};
 const openWindows = new Map();
@@ -128,7 +164,7 @@ function topicValues(topic){
 
 function headingRows(win){
   const rows=[];
-  for(const [id,original] of visibleTopicFields(win.topic)){
+  for(const [id,original] of win.editorFields){
     const control=win.el.querySelector(`[data-modal-heading="${id}"]`);
     const value=control?.value?.trim() || '';
     if(!value){
@@ -138,6 +174,18 @@ function headingRows(win){
     }
     if(value!==fieldHeading(id,original)) rows.push({id:fieldHeadingKey(id),value});
   }
+  return rows;
+}
+function editorRows(win){
+  const headings=headingRows(win);
+  if(!headings) return null;
+  const rows=[];
+  for(const [id] of win.editorFields){
+    const field=win.el.querySelector(`[data-modal-field="${id}"]`);
+    if(!field) return null;
+    rows.push({id,value:field.value||''});
+  }
+  rows.push(...headings,{id:topicFieldLayoutKey(win.topic),value:serializeFieldLayout(win.editorFields)});
   return rows;
 }
 
@@ -245,11 +293,13 @@ function clampWindowPosition(el,left,top){
 
 function windowHasUnsavedChanges(win){
   if(!win.dirty) return false;
-  return visibleTopicFields(win.topic).some(([id,original])=>{
+  const original=visibleTopicFields(win.topic);
+  if(serializeFieldLayout(win.editorFields)!==serializeFieldLayout(original)) return true;
+  return win.editorFields.some(([id,label])=>{
     const field=win.el.querySelector(`[data-modal-field="${id}"]`);
     const heading=win.el.querySelector(`[data-modal-heading="${id}"]`);
     return (field?.value||'') !== (state.values[id]||'') ||
-      (heading?.value||'').trim() !== fieldHeading(id,original);
+      (heading?.value||'').trim() !== fieldHeading(id,label);
   });
 }
 
@@ -266,15 +316,20 @@ function setWindowDirty(win,dirty=true){
   }
 }
 
-function windowMarkup(group,topic,groupIndex,topicIndex,key){
-  const fields=visibleTopicFields(topic).map(([id,label,help])=>`<div class="modal-field">
+function editorFieldMarkup(field,key){
+  const [id,label,help]=field;
+  return `<div class="modal-field" data-editor-field="${esc(id)}">
     <div class="modal-heading-control">
       <label for="modal-heading-${key}-${esc(id)}">Kopje aanpassen</label>
       <input type="text" id="modal-heading-${key}-${esc(id)}" data-modal-heading="${esc(id)}" maxlength="120" value="${esc(fieldHeading(id,label))}">
+      <button type="button" class="modal-remove-heading" data-remove-heading="${esc(id)}" title="Kopje en tekstvak verwijderen" aria-label="Kopje verwijderen">Verwijderen</button>
     </div>
-    <label for="modal-${key}-${esc(id)}" data-modal-heading-preview="${esc(id)}">${esc(fieldHeading(id,label))}<small>${esc(help)}</small></label>
+    <label for="modal-${key}-${esc(id)}" data-modal-heading-preview="${esc(id)}">${esc(fieldHeading(id,label))}${help?`<small>${esc(help)}</small>`:''}</label>
     <textarea id="modal-${key}-${esc(id)}" data-modal-field="${esc(id)}"></textarea>
-  </div>`).join('');
+  </div>`;
+}
+function windowMarkup(group,topic,groupIndex,topicIndex,key){
+  const fields=visibleTopicFields(topic).map(field=>editorFieldMarkup(field,key)).join('');
   return `<section class="editor-window" data-editor-window="${key}" role="dialog" aria-modal="false" aria-labelledby="window-title-${key}">
     <header class="window-bar" data-window-drag-handle>
       <div class="window-title-wrap">
@@ -289,6 +344,8 @@ function windowMarkup(group,topic,groupIndex,topicIndex,key){
     <div class="window-body">
       <p class="window-help">Werk alleen dit onderdeel uit. Klik op Opslaan om de tekst direct bij “${esc(topic.title)}” in het portfolio te tonen.</p>
       <div class="modal-fields">${fields}</div>
+      <button class="modal-add-heading" type="button" data-add-heading>+ Kopje toevoegen</button>
+      <p class="modal-fields-note">Je kunt kopjes toevoegen of verwijderen. Wijzigingen worden pas definitief zichtbaar na Opslaan.</p>
     </div>
     <footer class="window-footer">
       <span class="window-save-hint ${isTopicFilled(topic)?'saved':''}" data-window-save-hint>${isTopicFilled(topic)?'Bestaande tekst geladen.':'Dit onderdeel is nog leeg.'}</span>
@@ -306,16 +363,50 @@ function attachWindowEvents(win){
   const minimize=el.querySelector('[data-window-minimize]');
 
   el.addEventListener('pointerdown',()=>bringToFront(win,false));
-  el.querySelectorAll('[data-modal-field]').forEach(field=>{
-    field.value=state.values[field.dataset.modalField]||'';
-    field.addEventListener('input',()=>setWindowDirty(win,true));
-  });
-  el.querySelectorAll('[data-modal-heading]').forEach(input=>{
-    input.addEventListener('input',()=>{
-      const preview=el.querySelector(`[data-modal-heading-preview="${input.dataset.modalHeading}"]`);
+  const wireField=row=>{
+    const field=row.querySelector('[data-modal-field]');
+    if(field){
+      field.value=state.values[field.dataset.modalField]||'';
+      field.addEventListener('input',()=>setWindowDirty(win,true));
+    }
+    const input=row.querySelector('[data-modal-heading]');
+    input?.addEventListener('input',()=>{
+      const preview=row.querySelector('[data-modal-heading-preview]');
       if(preview?.firstChild) preview.firstChild.textContent=input.value.trim();
       setWindowDirty(win,true);
     });
+  };
+  el.querySelectorAll('[data-editor-field]').forEach(wireField);
+  el.querySelector('[data-add-heading]')?.addEventListener('click',()=>{
+    if(win.editorFields.length>=40){
+      window.alert('Maximaal 40 kopjes per onderdeel.');
+      return;
+    }
+    const field=[newFieldId(),'Nieuw kopje',''];
+    win.editorFields.push(field);
+    const wrapper=document.createElement('div');
+    wrapper.innerHTML=editorFieldMarkup(field,win.key);
+    const row=wrapper.firstElementChild;
+    el.querySelector('.modal-fields').appendChild(row);
+    wireField(row);
+    setWindowDirty(win,true);
+    row.querySelector('[data-modal-heading]')?.focus();
+    row.querySelector('[data-modal-heading]')?.select();
+  });
+  el.querySelector('.modal-fields')?.addEventListener('click',event=>{
+    const button=event.target.closest('[data-remove-heading]');
+    if(!button) return;
+    const id=button.dataset.removeHeading;
+    const row=button.closest('[data-editor-field]');
+    const label=row?.querySelector('[data-modal-heading]')?.value?.trim()||'dit kopje';
+    const content=row?.querySelector('[data-modal-field]')?.value?.trim()||'';
+    const warning=content
+      ? `Kopje “${label}” en de tekst eronder verdwijnen uit dit onderdeel. De eerder opgeslagen tekst blijft veilig bewaard. Doorgaan?`
+      : `Kopje “${label}” verwijderen?`;
+    if(!window.confirm(warning)) return;
+    win.editorFields=win.editorFields.filter(field=>field[0]!==id);
+    row?.remove();
+    setWindowDirty(win,true);
   });
 
   el.querySelector('[data-window-close]')?.addEventListener('click',()=>closeWindow(win,false));
@@ -368,7 +459,7 @@ function openEditor(groupIndex,topicIndex){
   const el=wrapper.firstElementChild;
   windowLayer.appendChild(el);
 
-  const win={key,el,groupIndex,topicIndex,group,topic,dirty:false,minimized:false,restorePosition:null,dragState:null,z:0};
+  const win={key,el,groupIndex,topicIndex,group,topic,editorFields:visibleTopicFields(topic),dirty:false,minimized:false,restorePosition:null,dragState:null,z:0};
   openWindows.set(key,win);
   attachWindowEvents(win);
   windowLayer.hidden=false;
@@ -399,14 +490,14 @@ function closeWindow(win,force=false){
 
 function saveWindow(win){
   if(!win||!openWindows.has(win.key)) return;
-  const headings=headingRows(win);
-  if(!headings) return;
-  headings.forEach(row=>{ state.values[row.id]=row.value; });
-  visibleTopicFields(win.topic).forEach(([id])=>{
-    const field=win.el.querySelector(`[data-modal-field="${id}"]`);
-    state.values[id]=field?.value||'';
-  });
-  if(!persistState(`${win.topic.title} opgeslagen`)) return;
+  const rows=editorRows(win);
+  if(!rows) return;
+  const previous={...state.values};
+  rows.forEach(row=>{state.values[row.id]=row.value;});
+  if(!persistState(`${win.topic.title} opgeslagen`)){
+    state.values=previous;
+    return;
+  }
   setWindowDirty(win,false);
   const cardSelector=`[data-topic-card="${win.groupIndex}-${win.topicIndex}"]`;
   renderChapters();
@@ -517,10 +608,8 @@ document.getElementById('importFile')?.addEventListener('change',async event=>{
       renderChapters();
       openWindows.forEach(win=>{
         if(windowHasUnsavedChanges(win)) return;
-        visibleTopicFields(win.topic).forEach(([id])=>{
-          const field=win.el.querySelector(`[data-modal-field="${id}"]`);
-          if(field) field.value=state.values[id]||'';
-        });
+        // Reopen editors to reflect potentially changed field lists and headings.
+        closeWindow(win,true);
       });
     }
   }catch(err){
