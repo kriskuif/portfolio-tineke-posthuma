@@ -238,29 +238,25 @@
       return;
     }
 
-    const headings=headingRows(win);
-    if(!headings) return;
-    const previous = {};
-    const rows = [];
-    visibleTopicFields(win.topic).forEach(([id])=>{
-      previous[id] = state.values[id] || '';
-      const field = win.el.querySelector(`[data-modal-field="${id}"]`);
-      const value = field?.value || '';
-      state.values[id] = value;
-      rows.push({id,value});
+    const rows=editorRows(win);
+    if(!rows) return;
+    const previous={};
+    // Save the active field list, editable titles and text in one upsert.
+    // Removed fields remain in storage as a safety backup; they are no longer shown.
+    rows.forEach(({id,value})=>{
+      previous[id]=state.values[id];
+      state.values[id]=value;
     });
-    // Save title overrides with the text in the same online write, so either
-    // both succeed or both fail. Existing field IDs and rich text stay intact.
-    headings.forEach(row=>{
-      previous[row.id]=state.values[row.id] || '';
-      state.values[row.id]=row.value;
-      rows.push(row);
-    });
-
+    const saveButton=win.el.querySelector('[data-window-save]');
+    if(saveButton) saveButton.disabled=true;
     setStatus('Opslaan op website…','saving');
     const { error } = await client.from('portfolio_content').upsert(rows,{onConflict:'id'});
     if(error){
-      Object.entries(previous).forEach(([id,value])=>{ state.values[id]=value; });
+      Object.entries(previous).forEach(([id,value])=>{
+        if(value===undefined) delete state.values[id];
+        else state.values[id]=value;
+      });
+      if(saveButton) saveButton.disabled=false;
       setStatus('Opslaan op website mislukt','error');
       console.error('Online opslaan mislukt:', error);
       return;
