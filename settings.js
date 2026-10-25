@@ -87,23 +87,28 @@
     return {filled,total};
   }
 
-  function allFieldIds(){
-    return [...new Set(groups.flatMap(group => group.topics.flatMap(topic =>
-      topic.fields.flatMap(([id]) => [id,fieldHeadingKey(id)]))))];
+  function allFieldIds(rows=[]){
+    const onlineLayouts=new Map(rows.filter(row=>row.id?.startsWith('topic_field_layout_v1_'))
+      .map(row=>[row.id,row.value]));
+    const ids=new Set();
+    groups.forEach(group=>group.topics.forEach(topic=>{
+      const key=topicFieldLayoutKey(topic);
+      ids.add(key);
+      topic.fields.forEach(([id])=>{ids.add(id);ids.add(fieldHeadingKey(id));});
+      const current=fieldsFromLayout(topic,state.values[key]);
+      const incoming=onlineLayouts.has(key)?fieldsFromLayout(topic,onlineLayouts.get(key)):current;
+      [...current,...incoming].forEach(([id])=>{
+        ids.add(id);
+        ids.add(fieldHeadingKey(id));
+      });
+    }));
+    return [...ids];
   }
 
   function openUnsavedEditors(){
     try{
       if(typeof openWindows === 'undefined') return [];
-      return [...openWindows.values()].filter(win =>
-        win?.topic?.fields?.some(([id]) => {
-          const field = win.el?.querySelector(`[data-modal-field="${id}"]`);
-          const heading = win.el?.querySelector(`[data-modal-heading="${id}"]`);
-          const original = win.topic.fields.find(item=>item[0]===id)?.[1] || '';
-          return (field && field.value !== String(state.values[id] || '')) ||
-            (heading && heading.value.trim() !== fieldHeading(id,original));
-        })
-      );
+      return [...openWindows.values()].filter(win=>windowHasUnsavedChanges(win));
     }catch(_err){
       return [];
     }
@@ -111,7 +116,7 @@
 
   function remoteMap(rows){
     const map = {};
-    allFieldIds().forEach(id => { map[id] = ''; });
+    allFieldIds(rows).forEach(id => { map[id] = ''; });
     (rows || []).forEach(row => {
       if(Object.prototype.hasOwnProperty.call(map, row.id)) map[row.id] = row.value ?? '';
     });
@@ -120,7 +125,7 @@
 
   function localDifferences(rows){
     const online = remoteMap(rows);
-    return allFieldIds().filter(id => String(state.values[id] || '') !== String(online[id] || ''));
+    return allFieldIds(rows).filter(id => String(state.values[id] || '') !== String(online[id] || ''));
   }
 
   async function fetchOnlineRows(){
@@ -227,7 +232,7 @@
   }
 
   function topicHtml(topic,number){
-    const rows = topic.fields
+    const rows = visibleTopicFields(topic)
       .map(([id,label])=>({label:fieldHeading(id,label),value:String(state.values[id]||'').trim()}))
       .filter(item=>item.value);
     const body = rows.length
