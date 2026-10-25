@@ -840,7 +840,9 @@
           confirm:'Definitief verwijderen'
         });
         if(!approved)return;
-        queuedPurge.set(id,topic.fields.map(field=>field[0]));
+        // Include any dynamically added text blocks and their custom headings.
+        const fieldIds=new Set([...topic.fields,...visibleTopicFields(topic)].map(field=>field[0]));
+        queuedPurge.set(id,[topicFieldLayoutKey(topic),...[...fieldIds].flatMap(fieldId=>[fieldId,fieldHeadingKey(fieldId)])]);
         draft.removed=draft.removed.filter(value=>value!==id);
         delete draft.removedMeta[id];
         if(topicMap.has(id)){
@@ -1035,9 +1037,12 @@
         if(!session||!document.body.classList.contains('can-edit'))throw Error('Log opnieuw in met een beheeraccount.');
         if(typeof openWindows!=='undefined'&&openWindows.size)throw Error('Sluit eerst alle geopende invulvensters voordat je de indeling opslaat.');
         const normalized=validated(draft);
-        const protectedFields=new Set(Object.values(normalized.topics).flatMap(ids=>ids.flatMap(id=>
-          (topicFor(id,normalized)?.fields||[]).map(field=>field[0])
-        )));
+        const protectedFields=new Set(Object.values(normalized.topics).flatMap(ids=>ids.flatMap(id=>{
+          const topic=topicFor(id,normalized);
+          if(!topic)return [];
+          const fieldIds=new Set([...topic.fields,...visibleTopicFields(topic)].map(field=>field[0]));
+          return [topicFieldLayoutKey(topic),...[...fieldIds].flatMap(fieldId=>[fieldId,fieldHeadingKey(fieldId)])];
+        })));
         const purgeIds=[...new Set([...queuedPurge.values()].flat())];
         if(purgeIds.some(id=>protectedFields.has(id)))
           throw Error('Een te verwijderen tekstveld wordt nog gebruikt in een ander onderdeel.');
