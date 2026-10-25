@@ -238,14 +238,23 @@
       return;
     }
 
+    const headings=headingRows(win);
+    if(!headings) return;
     const previous = {};
     const rows = [];
-    win.topic.fields.forEach(([id])=>{
+    visibleTopicFields(win.topic).forEach(([id])=>{
       previous[id] = state.values[id] || '';
       const field = win.el.querySelector(`[data-modal-field="${id}"]`);
       const value = field?.value || '';
       state.values[id] = value;
       rows.push({id,value});
+    });
+    // Save title overrides with the text in the same online write, so either
+    // both succeed or both fail. Existing field IDs and rich text stay intact.
+    headings.forEach(row=>{
+      previous[row.id]=state.values[row.id] || '';
+      state.values[row.id]=row.value;
+      rows.push(row);
     });
 
     setStatus('Opslaan op website…','saving');
