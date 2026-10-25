@@ -107,7 +107,7 @@ ${appClone.outerHTML}
   }
 
   function topicHtml(topic,number){
-    const rows=topic.fields.map(([id,label])=>({label,value:String(state.values[id]||'').trim()})).filter(item=>item.value);
+    const rows=visibleTopicFields(topic).map(([id,label])=>({label:fieldHeading(id,label),value:String(state.values[id]||'').trim()})).filter(item=>item.value);
     const content=rows.length
       ? rows.map(item=>`<div class="field"><h4>${esc(item.label)}</h4><p>${esc(item.value).replace(/\n/g,'<br>')}</p></div>`).join('')
       : '<p class="empty">Nog niet ingevuld.</p>';
