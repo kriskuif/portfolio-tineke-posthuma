@@ -88,7 +88,8 @@
   }
 
   function allFieldIds(){
-    return groups.flatMap(group => group.topics.flatMap(topic => topic.fields.map(([id]) => id)));
+    return [...new Set(groups.flatMap(group => group.topics.flatMap(topic =>
+      topic.fields.flatMap(([id]) => [id,fieldHeadingKey(id)]))))];
   }
 
   function openUnsavedEditors(){
@@ -97,7 +98,10 @@
       return [...openWindows.values()].filter(win =>
         win?.topic?.fields?.some(([id]) => {
           const field = win.el?.querySelector(`[data-modal-field="${id}"]`);
-          return field && field.value !== String(state.values[id] || '');
+          const heading = win.el?.querySelector(`[data-modal-heading="${id}"]`);
+          const original = win.topic.fields.find(item=>item[0]===id)?.[1] || '';
+          return (field && field.value !== String(state.values[id] || '')) ||
+            (heading && heading.value.trim() !== fieldHeading(id,original));
         })
       );
     }catch(_err){
@@ -224,7 +228,7 @@
 
   function topicHtml(topic,number){
     const rows = topic.fields
-      .map(([id,label])=>({label,value:String(state.values[id]||'').trim()}))
+      .map(([id,label])=>({label:fieldHeading(id,label),value:String(state.values[id]||'').trim()}))
       .filter(item=>item.value);
     const body = rows.length
       ? rows.map(item=>`<div class="field"><h4>${esc(item.label)}</h4><p>${esc(item.value).replace(/\n/g,'<br>')}</p></div>`).join('')
