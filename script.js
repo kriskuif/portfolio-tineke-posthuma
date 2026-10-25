@@ -61,6 +61,9 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 // Uitgefaseerde invoervelden verschijnen niet opnieuw via opgeslagen oude indelingen.
 const removedInputFieldIds = new Set(['s3_behoeften','s8_bijstelling']);
 const visibleTopicFields = topic => (topic?.fields || []).filter(([id]) => !removedInputFieldIds.has(id));
+// The field ID is stable even when a topic is moved or its chapter is reordered.
+const fieldHeadingKey = id => 'field_heading_' + id;
+const fieldHeading = (id,original) => String(state.values[fieldHeadingKey(id)] || '').trim() || original;
 
 let state = {version:2, updatedAt:null, values:{}};
 const openWindows = new Map();
@@ -120,7 +123,22 @@ function persistState(message='Onderdeel opgeslagen'){
 }
 
 function topicValues(topic){
-  return visibleTopicFields(topic).map(([id,label])=>({id,label,value:String(state.values[id]||'').trim()}));
+  return visibleTopicFields(topic).map(([id,label])=>({id,label:fieldHeading(id,label),value:String(state.values[id]||'').trim()}));
+}
+
+function headingRows(win){
+  const rows=[];
+  for(const [id,original] of visibleTopicFields(win.topic)){
+    const control=win.el.querySelector(`[data-modal-heading="${id}"]`);
+    const value=control?.value?.trim() || '';
+    if(!value){
+      setStatus('Vul voor elk tekstvak een kopje in.','error');
+      control?.focus();
+      return null;
+    }
+    if(value!==fieldHeading(id,original)) rows.push({id:fieldHeadingKey(id),value});
+  }
+  return rows;
 }
 
 function isTopicFilled(topic){
@@ -227,9 +245,11 @@ function clampWindowPosition(el,left,top){
 
 function windowHasUnsavedChanges(win){
   if(!win.dirty) return false;
-  return visibleTopicFields(win.topic).some(([id])=>{
+  return visibleTopicFields(win.topic).some(([id,original])=>{
     const field=win.el.querySelector(`[data-modal-field="${id}"]`);
-    return (field?.value||'') !== (state.values[id]||'');
+    const heading=win.el.querySelector(`[data-modal-heading="${id}"]`);
+    return (field?.value||'') !== (state.values[id]||'') ||
+      (heading?.value||'').trim() !== fieldHeading(id,original);
   });
 }
 
@@ -247,7 +267,14 @@ function setWindowDirty(win,dirty=true){
 }
 
 function windowMarkup(group,topic,groupIndex,topicIndex,key){
-  const fields=visibleTopicFields(topic).map(([id,label,help])=>`<div class="modal-field"><label for="modal-${key}-${esc(id)}">${esc(label)}<small>${esc(help)}</small></label><textarea id="modal-${key}-${esc(id)}" data-modal-field="${esc(id)}"></textarea></div>`).join('');
+  const fields=visibleTopicFields(topic).map(([id,label,help])=>`<div class="modal-field">
+    <div class="modal-heading-control">
+      <label for="modal-heading-${key}-${esc(id)}">Kopje aanpassen</label>
+      <input type="text" id="modal-heading-${key}-${esc(id)}" data-modal-heading="${esc(id)}" maxlength="120" value="${esc(fieldHeading(id,label))}">
+    </div>
+    <label for="modal-${key}-${esc(id)}" data-modal-heading-preview="${esc(id)}">${esc(fieldHeading(id,label))}<small>${esc(help)}</small></label>
+    <textarea id="modal-${key}-${esc(id)}" data-modal-field="${esc(id)}"></textarea>
+  </div>`).join('');
   return `<section class="editor-window" data-editor-window="${key}" role="dialog" aria-modal="false" aria-labelledby="window-title-${key}">
     <header class="window-bar" data-window-drag-handle>
       <div class="window-title-wrap">
@@ -282,6 +309,13 @@ function attachWindowEvents(win){
   el.querySelectorAll('[data-modal-field]').forEach(field=>{
     field.value=state.values[field.dataset.modalField]||'';
     field.addEventListener('input',()=>setWindowDirty(win,true));
+  });
+  el.querySelectorAll('[data-modal-heading]').forEach(input=>{
+    input.addEventListener('input',()=>{
+      const preview=el.querySelector(`[data-modal-heading-preview="${input.dataset.modalHeading}"]`);
+      if(preview?.firstChild) preview.firstChild.textContent=input.value.trim();
+      setWindowDirty(win,true);
+    });
   });
 
   el.querySelector('[data-window-close]')?.addEventListener('click',()=>closeWindow(win,false));
@@ -365,6 +399,9 @@ function closeWindow(win,force=false){
 
 function saveWindow(win){
   if(!win||!openWindows.has(win.key)) return;
+  const headings=headingRows(win);
+  if(!headings) return;
+  headings.forEach(row=>{ state.values[row.id]=row.value; });
   visibleTopicFields(win.topic).forEach(([id])=>{
     const field=win.el.querySelector(`[data-modal-field="${id}"]`);
     state.values[id]=field?.value||'';
