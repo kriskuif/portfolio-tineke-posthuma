@@ -250,15 +250,17 @@
     const saveButton=win.el.querySelector('[data-window-save]');
     if(saveButton) saveButton.disabled=true;
     setStatus('Opslaan op website…','saving');
-    const { error } = await client.from('portfolio_content').upsert(rows,{onConflict:'id'});
-    if(error){
+    try{
+      const {error}=await client.from('portfolio_content').upsert(rows,{onConflict:'id'});
+      if(error) throw error;
+    }catch(error){
       Object.entries(previous).forEach(([id,value])=>{
         if(value===undefined) delete state.values[id];
         else state.values[id]=value;
       });
       if(saveButton) saveButton.disabled=false;
       setStatus('Opslaan op website mislukt','error');
-      console.error('Online opslaan mislukt:', error);
+      console.error('Online opslaan mislukt:',error);
       return;
     }
 
