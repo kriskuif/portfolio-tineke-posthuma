@@ -133,6 +133,11 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:26px}
 .modal-heading-control label{flex:0 0 auto;font-size:.74rem;color:#456755;font-weight:800}
 .modal-heading-control input{flex:1;min-width:0;box-sizing:border-box;padding:8px 10px;border:1px solid #cbd9cf;border-radius:8px;background:#fff;color:#253d32;font:inherit;font-size:.88rem;font-weight:650}
 .modal-heading-control input:focus{outline:2px solid rgba(31,94,74,.16);border-color:#7ca08e}
+.modal-remove-heading{flex:0 0 auto;background:#fff;border:1px solid #e8d3d1;border-radius:8px;padding:8px 10px;color:#98534d;font:inherit;font-size:.75rem;font-weight:800;cursor:pointer}
+.modal-remove-heading:hover,.modal-remove-heading:focus-visible{background:#fff2f1;border-color:#cc9b97}
+.modal-add-heading{margin-top:14px;border:1px dashed #8daea0;border-radius:11px;background:#eff6f0;color:#20604b;padding:11px 15px;font:inherit;font-size:.85rem;font-weight:850;cursor:pointer}
+.modal-add-heading:hover,.modal-add-heading:focus-visible{border-style:solid;background:#e4f0e8}
+.modal-fields-note{margin:8px 0 0;color:var(--muted);font-size:.74rem;line-height:1.5}
 @media(max-width:490px){.modal-heading-control{align-items:stretch;flex-direction:column;gap:6px}}
 .modal-field textarea{width:100%;min-height:150px;resize:vertical;border:1px solid #cfdad3;border-radius:13px;padding:12px 13px;background:#fff;color:var(--ink);font:inherit;font-size:.92rem;line-height:1.55;outline:none;transition:border-color .16s,box-shadow .16s}
 .modal-field textarea:focus{border-color:#6e9b83;box-shadow:0 0 0 3px rgba(69,124,94,.10)}
